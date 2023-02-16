@@ -6,11 +6,8 @@ COPY . .
 
 RUN hugo
 
-FROM nginx:stable-alpine
+FROM nginx:alpine
 
 COPY --from=builder /src/public /usr/share/nginx/html
 
-RUN rm /etc/nginx/conf.d/default.conf
-COPY nginx/config/app.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 8080
+EXPOSE 80
