@@ -8,6 +8,6 @@ RUN hugo
 
 FROM nginx:stable-alpine
 
-COPY --from=build /src/public /usr/share/nginx/html
+COPY --from=builder /src/public /usr/share/nginx/html
 
 EXPOSE 80 443
