@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Tags on Kyle Wilson</title>
+    <link>https://blog.kyledev.co/tags/</link>
+    <description>Recent content in Tags on Kyle Wilson</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 15 Feb 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://blog.kyledev.co/tags/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>bare-metal</title>
+      <link>https://blog.kyledev.co/tags/bare-metal/</link>
+      <pubDate>Wed, 15 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://blog.kyledev.co/tags/bare-metal/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>homelab</title>
+      <link>https://blog.kyledev.co/tags/homelab/</link>
+      <pubDate>Wed, 15 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://blog.kyledev.co/tags/homelab/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>k3s</title>
+      <link>https://blog.kyledev.co/tags/k3s/</link>
+      <pubDate>Wed, 15 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://blog.kyledev.co/tags/k3s/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>metallb</title>
+      <link>https://blog.kyledev.co/tags/metallb/</link>
+      <pubDate>Wed, 15 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://blog.kyledev.co/tags/metallb/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>pihole</title>
+      <link>https://blog.kyledev.co/tags/pihole/</link>
+      <pubDate>Wed, 15 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://blog.kyledev.co/tags/pihole/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>tailscale</title>
+      <link>https://blog.kyledev.co/tags/tailscale/</link>
+      <pubDate>Wed, 15 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://blog.kyledev.co/tags/tailscale/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

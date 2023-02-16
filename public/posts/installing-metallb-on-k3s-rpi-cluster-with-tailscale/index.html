@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <title>Installing Metallb on K3s RPI cluster with tailscale | Kyle Wilson</title>
+
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">    
+<meta name="viewport" content="width=device-width,minimum-scale=1">
+<meta name="description" content="Metallb on RPIs with tailscale">
+<meta name="generator" content="Hugo 0.110.0">
+
+
+  <META NAME="ROBOTS" CONTENT="NOINDEX, NOFOLLOW">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon" />
+
+
+
+
+
+
+
+  </head>
+
+  <body>
+    <nav class="navigation">
+	
+		<a href="/"> <span class="arrow">←</span>Home</a>
+	
+	<a href="/posts">Archive</a>
+	<a href="/tags">Tags</a>
+	<a href="/about">About</a>
+
+	
+
+	
+	  <a class="button" href="https://blog.kyledev.co/index.xml">Subscribe</a>
+	
+</nav>
+
+
+    <main class="main">
+      
+
+<section id="single">
+    <h1 class="title">Installing Metallb on K3s RPI cluster with tailscale</h1>
+
+    <div class="tip">
+        <time datetime="2023-02-15 00:00:00 &#43;0000 UTC">Feb 15, 2023</time>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          1638 words
+        </span>
+        <span class="split">
+          ·
+        </span>
+        <span>
+          8 minute read
+        </span>
+    </div>
+
+    
+    
+        
+  
+    <aside class="toc">
+      <details>
+          <summary>Table of Contents
+          </summary>
+          <div>
+              <nav id="TableOfContents">
+  <ul>
+    <li><a href="#metallb">Metallb</a>
+      <ul>
+        <li><a href="#installing-the-controller">Installing the controller</a></li>
+        <li><a href="#configuration">Configuration</a></li>
+      </ul>
+    </li>
+    <li><a href="#tailscale">Tailscale</a>
+      <ul>
+        <li><a href="#subnet-routers">Subnet Routers</a></li>
+        <li><a href="#approving-our-subnet-router">Approving our Subnet Router</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li><a href="#pihole">Pihole</a>
+      <ul>
+        <li><a href="#defining-our-pihole-deployment">Defining our pihole deployment</a></li>
+      </ul>
+    </li>
+    <li><a href="#validation">Validation</a></li>
+  </ul>
+</nav>
+          </div>
+      </details>
+    </aside>
+  
+
+
+    
+
+
+    <div class="content">
+      <h2 id="metallb">Metallb <a href="#metallb" class="anchor">🔗</a></h2><p><a href="https://metallb.universe.tf/" target="_blank" rel="noopener">MetalLB</a> is a load-balancer implementation for bare-metal Kubernetes clusters, using standard routing protocols.</p>
+<p>In short, it allows you to create Kubernetes services of type <code>LoadBalancer</code> in kubernetes clusters that don’t run on a cloud provider, such as bare-metal clusters.</p>
+<h3 id="installing-the-controller">Installing the controller <a href="#installing-the-controller" class="anchor">🔗</a></h3><p>Head over to the installation <a href="https://metallb.universe.tf/installation/" target="_blank" rel="noopener">docs</a>. I personally chose to install by manifest, which creates a <code>metallb-system</code> namespace for us.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml</span></span></code></pre></div>
+<p>Metallb runs as a daemonset, creating a pod that runs on each node known as <code>speaker</code>, in addition to a controller. The controller will handle assinging IPs to services, while each speaker will advertise services with assigned IPs using the strategy configured. I currently have 3 nodes in my cluster there are 3 speakers total.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>$ kubectl get daemonset -n metallb-system
+</span></span><span style="display:flex;"><span>NAME      DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+</span></span><span style="display:flex;"><span>speaker   <span style="color:#40a070">3</span>         <span style="color:#40a070">3</span>         <span style="color:#40a070">3</span>       <span style="color:#40a070">3</span>            <span style="color:#40a070">3</span>           kubernetes.io/os<span style="color:#666">=</span>linux   5h30m
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>$ kubectl get pods -n metallb-system
+</span></span><span style="display:flex;"><span>NAME                          READY   STATUS    RESTARTS        AGE
+</span></span><span style="display:flex;"><span>controller-84d6d4db45-zvd2d   1/1     Running   <span style="color:#40a070">0</span>               5h22m
+</span></span><span style="display:flex;"><span>speaker-xmngr                 1/1     Running   <span style="color:#40a070">0</span>               5h22m
+</span></span><span style="display:flex;"><span>speaker-sqrsq                 1/1     Running   <span style="color:#40a070">0</span>               5h22m
+</span></span><span style="display:flex;"><span>speaker-gf2cm                 1/1     Running   <span style="color:#40a070">0</span>               5h22m</span></span></code></pre></div>
+<h3 id="configuration">Configuration <a href="#configuration" class="anchor">🔗</a></h3><p>We need to tell metallb what ip pool it has to pick from. You can use <code>10.0.1.0/24 CIDR</code> syntax here or a range such as <code>10.0.0.0-10.0.0.100</code>. To do this, we create an <code>IPAddressPool</code>.</p>
+<p><code>kubectl apply -f &lt;ip-address-file&gt;</code>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>metallb.io/v1beta1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>IPAddressPool<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>load-balancer<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>metallb-system<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">addresses</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- <span style="color:#40a070">10.0.1.0</span>/24</span></span></code></pre></div></p>
+<p>Next, we tell metallb how we want to advertise our services.</p>
+<p><code>kubectl apply -f &lt;advertisement-file&gt;</code>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>metallb.io/v1beta1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>L2Advertisement<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>l2advertisement<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>metallb-system<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">ipAddressPools</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- load-balancer</span></span></code></pre></div></p>
+<hr>
+<h2 id="tailscale">Tailscale <a href="#tailscale" class="anchor">🔗</a></h2><p>Check out tailscales <a href="https://tailscale.com/kb/1019/subnets/" target="_blank" rel="noopener">kb article</a> on subnets and why you want to use them.</p>
+<p>I want to access services metallb advertises in my <code>tailnet</code>, which is a good use case for a subnet router.</p>
+<h3 id="subnet-routers">Subnet Routers <a href="#subnet-routers" class="anchor">🔗</a></h3><p>I am advertising the <code>10.0.1.0/24</code> CIDR for my subnet router. This means we will be able to access any ip address in that range from devices that are connected to my <code>tailnet</code>, even if we I am not connected to the same local network. This only needs to be done on whichever node you want to use as a subnet router.</p>
+<blockquote>
+<p><strong><em>NOTE:</em></strong>  The ip range that you gave metallb to use need to fall under the CIDR for your subrouter. Check out <a href="https://www.ipaddressguide.com/cidr" target="_blank" rel="noopener">https://www.ipaddressguide.com/cidr</a> to verify your ip range is correct if you&rsquo;re not using CIDR format.</p>
+</blockquote>
+<p>We&rsquo;ll need to choose a machine to act as our subnet router and rerun tailscale up advertising the routes we want to expose to the tailnet.
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>sudo tailscale up --advertise-routes<span style="color:#666">=</span>10.0.1.0/24</span></span></code></pre></div></p>
+<h3 id="approving-our-subnet-router">Approving our Subnet Router <a href="#approving-our-subnet-router" class="anchor">🔗</a></h3><p>Once you&rsquo;ve ran some flavor of <code>sudo tailscale up</code>, navigate over to your tailnet <a href="https://login.tailscale.com/admin/machines" target="_blank" rel="noopener">admin console</a>.</p>
+<p>Lets approve our subnet and disable key expiry. I&rsquo;ve already disabled key expiry for this particular machine. Subnet routes can be approved under edit route settings.
+<p class="markdown-image">
+  <img src="/images/installing-metallb/machine-settings.jpeg" alt="machine options"  />
+</p></p>
+<p>Approve your subnet route(s)
+<p class="markdown-image">
+  <img src="/images/installing-metallb/approve-routes.jpeg" alt="machine options"  />
+</p></p>
+<p>Our subnet router should be ready to use!</p>
+<h1 id="testing-out-metallb--tailscale-subnet-router">Testing out metallb &amp; tailscale subnet router <a href="#testing-out-metallb--tailscale-subnet-router" class="anchor">🔗</a></h1><p>To test out our new setup, we&rsquo;re going to deploy pihole to our cluster, have metallb assign it an external ip, and use it to do a dns lookup for google.com.</p>
+<h2 id="pihole">Pihole <a href="#pihole" class="anchor">🔗</a></h2><p>Pi-hole is a general purpose network-wide ad-blocker that protects your network from ads and trackers without requiring any setup on individual devices. You can also use it as a DNS server.</p>
+<h3 id="defining-our-pihole-deployment">Defining our pihole deployment <a href="#defining-our-pihole-deployment" class="anchor">🔗</a></h3><p>Check out these <a href="https://github.com/MoJo2600/pihole-kubernetes" target="_blank" rel="noopener">helm charts</a> for setting up your deployment.</p>
+<p>First, we need to set up some persistance for our pihole deployment. This step is really optional if you don&rsquo;t plan to run pihole in your cluster long term. I specifically set up the <code>PersistentVolume</code> on my <code>nuc</code> machine since that node has extra storage to go around.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>PersistentVolume<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">pv</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">capacity</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">storage</span>:<span style="color:#bbb"> </span>500Mi<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">volumeMode</span>:<span style="color:#bbb"> </span>Filesystem<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">accessModes</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- ReadWriteMany<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">persistentVolumeReclaimPolicy</span>:<span style="color:#bbb"> </span>Retain<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">storageClassName</span>:<span style="color:#bbb"> </span>local-storage<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">local</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">path</span>:<span style="color:#bbb"> </span>/pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">nodeAffinity</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">required</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">nodeSelectorTerms</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>- <span style="color:#062873;font-weight:bold">matchExpressions</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span>- <span style="color:#062873;font-weight:bold">key</span>:<span style="color:#bbb"> </span>kubernetes.io/hostname<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">              </span><span style="color:#062873;font-weight:bold">operator</span>:<span style="color:#bbb"> </span>In<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">              </span><span style="color:#062873;font-weight:bold">values</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">                </span>- nuc<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#0e84b5;font-weight:bold">---</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>PersistentVolumeClaim<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">namespace</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">accessModes</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- ReadWriteMany<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">resources</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">requests</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">storage</span>:<span style="color:#bbb"> </span>500Mi<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">pv</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">storageClassName</span>:<span style="color:#bbb"> </span>local-storage</span></span></code></pre></div>
+<p>Next, let&rsquo;s take a look at the services we are going to deploy.</p>
+<p>Pihole <code>homelab-pihole-dns-tcp</code> and <code>homelab-pihole-dns-udp</code> will be the services used for dns lookups.</p>
+<p>Take note of the annotations on each of these two services. <code>metallb.universe.tf/loadBalancerIPs</code> tells metallb what ip(s) you want to assign to this service. Make sure the IP you assign to the services is within the range you gave metallb in the <code>IPAddressPool</code>.</p>
+<p>Because <code>homelab-pihole-dns-tcp</code> listens on <strong>TCP</strong> and <code>homelab-pihole-dns-udp</code> listens on <strong>UDP</strong>, these two services can share the same IP address.</p>
+<p>The annotation <code>metallb.universe.tf/allow-shared-ip</code> tells metallb to allow this. Each service that will be sharing an IP is required to have the annotation.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Service<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-dns-tcp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/allow-shared-ip</span>:<span style="color:#bbb"> </span>shared-pihole-dns<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/loadBalancerIPs</span>:<span style="color:#bbb"> </span><span style="color:#40a070">10.0.1.70</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">type</span>:<span style="color:#bbb"> </span>LoadBalancer<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">externalTrafficPolicy</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">ports</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- <span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#40a070">53</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">targetPort</span>:<span style="color:#bbb"> </span>dns<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>TCP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>dns<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#0e84b5;font-weight:bold">---</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Service<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-dns-udp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/allow-shared-ip</span>:<span style="color:#bbb"> </span>shared-pihole-dns<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/loadBalancerIPs</span>:<span style="color:#bbb"> </span><span style="color:#40a070">10.0.1.70</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">type</span>:<span style="color:#bbb"> </span>LoadBalancer<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">externalTrafficPolicy</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">ports</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- <span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#40a070">53</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">targetPort</span>:<span style="color:#bbb"> </span>dns-udp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>UDP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>dns-udp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#0e84b5;font-weight:bold">---</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Service<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-web<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/loadBalancerIPs</span>:<span style="color:#bbb"> </span><span style="color:#40a070">10.0.1.71</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">type</span>:<span style="color:#bbb"> </span>LoadBalancer<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">externalTrafficPolicy</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">ports</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- <span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#40a070">80</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">targetPort</span>:<span style="color:#bbb"> </span>http<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>TCP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>http<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- <span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#40a070">443</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">targetPort</span>:<span style="color:#bbb"> </span>https<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>TCP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>https<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab</span></span></code></pre></div>
+<p>We are also assigning the pihole-web component its own IP address so we can access it in the browser.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Service<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-web<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/loadBalancerIPs</span>:<span style="color:#bbb"> </span><span style="color:#40a070">10.0.1.71</span></span></span></code></pre></div>
+<p>Here is the full yaml I am using. You can leave out the custom dnsmaq config map and remove the volume from the deployment. We will be covering those in a later post.</p>
+<p><code>kubectl create namespace pihole</code></p>
+<p><code>kubectl apply -f &lt;your-yaml-file&gt; -n pihole</code>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#0e84b5;font-weight:bold">---</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Secret<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-password<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">chart</span>:<span style="color:#bbb"> </span>pihole-2.11.1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">heritage</span>:<span style="color:#bbb"> </span>Helm<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">type</span>:<span style="color:#bbb"> </span>Opaque<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">data</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">password</span>:<span style="color:#bbb"> </span><span style="color:#4070a0">&#34;YWRtaW4=&#34;</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#0e84b5;font-weight:bold">---</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>ConfigMap<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-custom-dnsmasq<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">chart</span>:<span style="color:#bbb"> </span>pihole-2.11.1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">heritage</span>:<span style="color:#bbb"> </span>Helm<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">data</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">02-custom.conf</span>:<span style="color:#bbb"> </span>|<span style="color:#4070a0;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#4070a0;font-style:italic">    addn-hosts=/etc/addn-hosts
+</span></span></span><span style="display:flex;"><span><span style="color:#4070a0;font-style:italic">    address=/int.kyledev.co/10.0.1.0</span><span style="color:#bbb">    
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">addn-hosts</span>:<span style="color:#bbb"> </span>|<span style="color:#4070a0;font-style:italic">
+</span></span></span><span style="display:flex;"><span><span style="color:#4070a0;font-style:italic">  </span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">05-pihole-custom-cname.conf</span>:<span style="color:#bbb"> </span>|<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#0e84b5;font-weight:bold">---</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Service<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-dns-tcp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">chart</span>:<span style="color:#bbb"> </span>pihole-2.11.1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">heritage</span>:<span style="color:#bbb"> </span>Helm<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/allow-shared-ip</span>:<span style="color:#bbb"> </span>shared-dns<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/loadBalancerIPs</span>:<span style="color:#bbb"> </span><span style="color:#40a070">10.0.1.70</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">type</span>:<span style="color:#bbb"> </span>LoadBalancer<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">externalTrafficPolicy</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">ports</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- <span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#40a070">53</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">targetPort</span>:<span style="color:#bbb"> </span>dns<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>TCP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>dns<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#0e84b5;font-weight:bold">---</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Service<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-dns-udp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">chart</span>:<span style="color:#bbb"> </span>pihole-2.11.1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">heritage</span>:<span style="color:#bbb"> </span>Helm<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/allow-shared-ip</span>:<span style="color:#bbb"> </span>shared-dns<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/loadBalancerIPs</span>:<span style="color:#bbb"> </span><span style="color:#40a070">10.0.1.70</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">type</span>:<span style="color:#bbb"> </span>LoadBalancer<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">externalTrafficPolicy</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">ports</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- <span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#40a070">53</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">targetPort</span>:<span style="color:#bbb"> </span>dns-udp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>UDP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>dns-udp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#0e84b5;font-weight:bold">---</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Service<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-web<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">chart</span>:<span style="color:#bbb"> </span>pihole-2.11.1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">heritage</span>:<span style="color:#bbb"> </span>Helm<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metallb.universe.tf/loadBalancerIPs</span>:<span style="color:#bbb"> </span><span style="color:#40a070">10.0.1.71</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">type</span>:<span style="color:#bbb"> </span>LoadBalancer<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">externalTrafficPolicy</span>:<span style="color:#bbb"> </span>Cluster<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">ports</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- <span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#40a070">80</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">targetPort</span>:<span style="color:#bbb"> </span>http<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>TCP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>http<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span>- <span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span><span style="color:#40a070">443</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">targetPort</span>:<span style="color:#bbb"> </span>https<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>TCP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>https<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#0e84b5;font-weight:bold">---</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">apiVersion</span>:<span style="color:#bbb"> </span>apps/v1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">kind</span>:<span style="color:#bbb"> </span>Deployment<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">chart</span>:<span style="color:#bbb"> </span>pihole-2.11.1<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">heritage</span>:<span style="color:#bbb"> </span>Helm<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb"></span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">replicas</span>:<span style="color:#bbb"> </span><span style="color:#40a070">1</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">strategy</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">type</span>:<span style="color:#bbb"> </span>RollingUpdate<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">rollingUpdate</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">maxSurge</span>:<span style="color:#bbb"> </span><span style="color:#40a070">1</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">maxUnavailable</span>:<span style="color:#bbb"> </span><span style="color:#40a070">1</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">selector</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">matchLabels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">  </span><span style="color:#062873;font-weight:bold">template</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">metadata</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">annotations</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">checksum.config.adlists</span>:<span style="color:#bbb"> </span>01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">checksum.config.blacklist</span>:<span style="color:#bbb"> </span>01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">checksum.config.regex</span>:<span style="color:#bbb"> </span>01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">checksum.config.whitelist</span>:<span style="color:#bbb"> </span>01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">checksum.config.dnsmasqConfig</span>:<span style="color:#bbb"> </span>622ac6ff4c980b4443e393f5251d8190a29a0c471c3f1ddeeebaaee554fbf67<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">checksum.config.staticDhcpConfig</span>:<span style="color:#bbb"> </span>01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">labels</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">app</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">release</span>:<span style="color:#bbb"> </span>homelab<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">    </span><span style="color:#062873;font-weight:bold">spec</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">dnsPolicy</span>:<span style="color:#bbb"> </span>None<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">dnsConfig</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">nameservers</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>- <span style="color:#40a070">1.1.1.1</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>- <span style="color:#40a070">8.8.8.8</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">hostname</span>:<span style="color:#bbb"> 
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">hostNetwork</span>:<span style="color:#bbb"> </span><span style="color:#007020;font-weight:bold">false</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">containers</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span>- <span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">env</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span><span style="color:#4070a0">&#39;WEB_PORT&#39;</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">value</span>:<span style="color:#bbb"> </span><span style="color:#4070a0">&#34;80&#34;</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>VIRTUAL_HOST<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">value</span>:<span style="color:#bbb"> </span>pi.hole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>WEBPASSWORD<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">valueFrom</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">              </span><span style="color:#062873;font-weight:bold">secretKeyRef</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">                </span><span style="color:#062873;font-weight:bold">key</span>:<span style="color:#bbb"> </span>password<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">                </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-password<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span><span style="color:#4070a0">&#39;PIHOLE_DNS_&#39;</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">value</span>:<span style="color:#bbb"> </span><span style="color:#4070a0">&#39;1.1.1.1;8.8.8.8&#39;</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">image</span>:<span style="color:#bbb"> </span><span style="color:#4070a0">&#34;pihole/pihole:2023.01&#34;</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">imagePullPolicy</span>:<span style="color:#bbb"> </span>IfNotPresent<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">securityContext</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">privileged</span>:<span style="color:#bbb"> </span><span style="color:#007020;font-weight:bold">false</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">ports</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">containerPort</span>:<span style="color:#bbb"> </span><span style="color:#40a070">80</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>http<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>TCP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">containerPort</span>:<span style="color:#bbb"> </span><span style="color:#40a070">53</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>dns<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>TCP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">containerPort</span>:<span style="color:#bbb"> </span><span style="color:#40a070">53</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>dns-udp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>UDP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">containerPort</span>:<span style="color:#bbb">  </span><span style="color:#40a070">443</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>https<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>TCP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">containerPort</span>:<span style="color:#bbb"> </span><span style="color:#40a070">67</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>client-udp<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">protocol</span>:<span style="color:#bbb"> </span>UDP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">livenessProbe</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">httpGet</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">              </span><span style="color:#062873;font-weight:bold">path</span>:<span style="color:#bbb"> </span>/admin/index.php<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">              </span><span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span>http<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">              </span><span style="color:#062873;font-weight:bold">scheme</span>:<span style="color:#bbb"> </span>HTTP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">initialDelaySeconds</span>:<span style="color:#bbb"> </span><span style="color:#40a070">60</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">failureThreshold</span>:<span style="color:#bbb"> </span><span style="color:#40a070">10</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">timeoutSeconds</span>:<span style="color:#bbb"> </span><span style="color:#40a070">5</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">readinessProbe</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">httpGet</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">              </span><span style="color:#062873;font-weight:bold">path</span>:<span style="color:#bbb"> </span>/admin/index.php<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">              </span><span style="color:#062873;font-weight:bold">port</span>:<span style="color:#bbb"> </span>http<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">              </span><span style="color:#062873;font-weight:bold">scheme</span>:<span style="color:#bbb"> </span>HTTP<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">initialDelaySeconds</span>:<span style="color:#bbb"> </span><span style="color:#40a070">60</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">failureThreshold</span>:<span style="color:#bbb"> </span><span style="color:#40a070">3</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">timeoutSeconds</span>:<span style="color:#bbb"> </span><span style="color:#40a070">5</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">volumeMounts</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/etc/pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>config<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/etc/dnsmasq.d/02-custom.conf<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>custom-dnsmasq<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">subPath</span>:<span style="color:#bbb"> </span><span style="color:#40a070">02</span>-custom.conf<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/etc/addn-hosts<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>custom-dnsmasq<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">subPath</span>:<span style="color:#bbb"> </span>addn-hosts<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span>- <span style="color:#062873;font-weight:bold">mountPath</span>:<span style="color:#bbb"> </span>/etc/dnsmasq.d/05-pihole-custom-cname.conf<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>custom-dnsmasq<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span><span style="color:#062873;font-weight:bold">subPath</span>:<span style="color:#bbb"> </span><span style="color:#40a070">05</span>-pihole-custom-cname.conf<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">resources</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">            </span>{}<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span><span style="color:#062873;font-weight:bold">volumes</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span>- <span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>config<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">persistentVolumeClaim</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">claimName</span>:<span style="color:#bbb"> </span>pihole<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">      </span>- <span style="color:#062873;font-weight:bold">configMap</span>:<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">defaultMode</span>:<span style="color:#bbb"> </span><span style="color:#40a070">420</span><span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">          </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>homelab-pihole-custom-dnsmasq<span style="color:#bbb">
+</span></span></span><span style="display:flex;"><span><span style="color:#bbb">        </span><span style="color:#062873;font-weight:bold">name</span>:<span style="color:#bbb"> </span>custom-dnsmasq</span></span></code></pre></div></p>
+<p>You can check that your services got created. Note the external-ips that got assigned to our services. The dns services should be sharing whatever ip you gave them, and the pihole-web service should have its own ip.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Kyles-MacBook-Pro:blog kylewilson$ kubectl get svc -n pihole
+</span></span><span style="display:flex;"><span>NAME                     TYPE           CLUSTER-IP      EXTERNAL-IP   PORT<span style="color:#666">(</span>S<span style="color:#666">)</span>                      AGE
+</span></span><span style="display:flex;"><span>homelab-pihole-dns-tcp   LoadBalancer   10.43.75.7      10.0.1.70     53:32441/TCP                 20h
+</span></span><span style="display:flex;"><span>homelab-pihole-dns-udp   LoadBalancer   10.43.242.253   10.0.1.70     53:30206/UDP                 20h
+</span></span><span style="display:flex;"><span>homelab-pihole-web       LoadBalancer   10.43.123.96    10.0.1.71     80:31059/TCP,443:31284/TCP   20h</span></span></code></pre></div>
+<p>And the pihole pod running</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Kyles-MacBook-Pro:blog kylewilson$ kubectl get pods -n pihole
+</span></span><span style="display:flex;"><span>NAME                             READY   STATUS    RESTARTS   AGE
+</span></span><span style="display:flex;"><span>homelab-pihole-989bd4c59-k9gd7   1/1     Running   <span style="color:#40a070">0</span>          19h</span></span></code></pre></div>
+<hr>
+<h2 id="validation">Validation <a href="#validation" class="anchor">🔗</a></h2><p>From my local laptop that is connected to the tailnet, I should be able to use the dns services to lookup domain names. We can use <code>dig</code> to test this out. If you&rsquo;re on windows, you can use <code>nslookup</code> instead.</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#f0f0f0;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>Kyles-MacBook-Pro:blog kylewilson$ dig @10.0.1.70 google.com
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>; &lt;&lt;&gt;&gt; DiG 9.10.6 &lt;&lt;&gt;&gt; @10.0.1.70 google.com
+</span></span><span style="display:flex;"><span>; <span style="color:#666">(</span><span style="color:#40a070">1</span> server found<span style="color:#666">)</span>
+</span></span><span style="display:flex;"><span>;; global options: +cmd
+</span></span><span style="display:flex;"><span>;; Got answer:
+</span></span><span style="display:flex;"><span>;; -&gt;&gt;HEADER<span style="color:#4070a0">&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span style="color:#40a070">17033</span>
+</span></span><span style="display:flex;"><span>;; flags: qr rd ra; QUERY: 1, ANSWER: 6, AUTHORITY: 0, ADDITIONAL: <span style="color:#40a070">1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>;; OPT PSEUDOSECTION:
+</span></span><span style="display:flex;"><span>; EDNS: version: 0, flags:; udp: <span style="color:#40a070">1232</span>
+</span></span><span style="display:flex;"><span>;; QUESTION SECTION:
+</span></span><span style="display:flex;"><span>;google.com.			IN	A
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>;; ANSWER SECTION:
+</span></span><span style="display:flex;"><span>google.com.		150	IN	A	142.250.123.101
+</span></span><span style="display:flex;"><span>google.com.		150	IN	A	142.250.123.100
+</span></span><span style="display:flex;"><span>google.com.		150	IN	A	142.250.123.138
+</span></span><span style="display:flex;"><span>google.com.		150	IN	A	142.250.123.102
+</span></span><span style="display:flex;"><span>google.com.		150	IN	A	142.250.123.139
+</span></span><span style="display:flex;"><span>google.com.		150	IN	A	142.250.123.113
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>;; Query time: <span style="color:#40a070">35</span> msec
+</span></span><span style="display:flex;"><span>;; SERVER: 10.0.1.70#53<span style="color:#666">(</span>10.0.1.70<span style="color:#666">)</span>
+</span></span><span style="display:flex;"><span>;; WHEN: Thu Feb <span style="color:#40a070">16</span> 10:51:32 EST <span style="color:#40a070">2023</span>
+</span></span><span style="display:flex;"><span>;; MSG SIZE  rcvd: <span style="color:#40a070">135</span></span></span></code></pre></div>
+<p>You can also navigate to the pihole dashboard from your browser
+<p class="markdown-image">
+  <img src="/images/installing-metallb/pihole-dashboard.png" alt="pihole dashboard"  />
+</p></p>
+<h1 id="whats-next">What&rsquo;s Next? <a href="#whats-next" class="anchor">🔗</a></h1><p>Check out how to set up <code>cert-manager</code> alongside <code>ingress-nginx-controller</code> to access your services via hosts with https using pihole as a dns server.</p>
+
+    </div>
+
+    
+        <div class="tags">
+            
+                <a href="https://blog.kyledev.co/tags/homelab">homelab</a>
+            
+                <a href="https://blog.kyledev.co/tags/metallb">metallb</a>
+            
+                <a href="https://blog.kyledev.co/tags/k3s">k3s</a>
+            
+                <a href="https://blog.kyledev.co/tags/tailscale">tailscale</a>
+            
+                <a href="https://blog.kyledev.co/tags/pihole">pihole</a>
+            
+                <a href="https://blog.kyledev.co/tags/bare-metal">bare-metal</a>
+            
+        </div>
+    
+    
+    
+  <div id="comment">
+    
+    
+  </div>
+
+
+</section>
+
+
+    </main>
+    
+    <footer id="footer">
+    
+        <div id="social">
+
+
+    <a class="symbol" href="https://github.com/kdwils" rel="me" target="_blank">
+        
+        <svg fill="#bbbbbb" width="28" height="28"  viewBox="0 0 72 72" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    
+    <title>Github</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Social-Icons---Rounded-Black" transform="translate(-264.000000, -939.000000)">
+            <g id="Github" transform="translate(264.000000, 939.000000)">
+                <path d="M8,72 L64,72 C68.418278,72 72,68.418278 72,64 L72,8 C72,3.581722 68.418278,-8.11624501e-16 64,0 L8,0 C3.581722,8.11624501e-16 -5.41083001e-16,3.581722 0,8 L0,64 C5.41083001e-16,68.418278 3.581722,72 8,72 Z" id="Rounded" fill="#bbbbbb"></path>
+                <path d="M35.9985,13 C22.746,13 12,23.7870921 12,37.096644 C12,47.7406712 18.876,56.7718301 28.4145,59.9584121 C29.6145,60.1797862 30.0525,59.4358488 30.0525,58.7973276 C30.0525,58.2250681 30.0315,56.7100863 30.0195,54.6996482 C23.343,56.1558981 21.9345,51.4693938 21.9345,51.4693938 C20.844,48.6864054 19.2705,47.9454799 19.2705,47.9454799 C17.091,46.4500754 19.4355,46.4801943 19.4355,46.4801943 C21.843,46.6503662 23.1105,48.9634994 23.1105,48.9634994 C25.2525,52.6455377 28.728,51.5823398 30.096,50.9649018 C30.3135,49.4077535 30.9345,48.3460615 31.62,47.7436831 C26.2905,47.1352808 20.688,45.0691228 20.688,35.8361671 C20.688,33.2052792 21.6225,31.0547881 23.1585,29.3696344 C22.911,28.7597262 22.0875,26.3110578 23.3925,22.9934585 C23.3925,22.9934585 25.4085,22.3459017 29.9925,25.4632101 C31.908,24.9285993 33.96,24.6620468 36.0015,24.6515052 C38.04,24.6620468 40.0935,24.9285993 42.0105,25.4632101 C46.5915,22.3459017 48.603,22.9934585 48.603,22.9934585 C49.9125,26.3110578 49.089,28.7597262 48.8415,29.3696344 C50.3805,31.0547881 51.309,33.2052792 51.309,35.8361671 C51.309,45.0917119 45.6975,47.1292571 40.3515,47.7256117 C41.2125,48.4695491 41.9805,49.9393525 41.9805,52.1877301 C41.9805,55.4089489 41.9505,58.0067059 41.9505,58.7973276 C41.9505,59.4418726 42.3825,60.1918338 43.6005,59.9554002 C53.13,56.7627944 60,47.7376593 60,37.096644 C60,23.7870921 49.254,13 35.9985,13" fill="#FFFFFF"></path>
+            </g>
+        </g>
+    </g>
+</svg>
+    </a>
+
+
+</div>
+
+    
+
+    <div class="copyright">
+    
+       © Copyright 
+       2023 
+       <span class="split">
+        <svg fill="#bbbbbb" width="15" height="15" version="1.1" id="heart-15" xmlns="http://www.w3.org/2000/svg" width="15px" height="15px" viewBox="0 0 15 15">
+  <path d="M13.91,6.75c-1.17,2.25-4.3,5.31-6.07,6.94c-0.1903,0.1718-0.4797,0.1718-0.67,0C5.39,12.06,2.26,9,1.09,6.75&#xA;&#x9;C-1.48,1.8,5-1.5,7.5,3.45C10-1.5,16.48,1.8,13.91,6.75z"/>
+</svg>
+       </span>
+       Kyle Wilson
+    
+    </div>
+
+    
+      <div class="powerby">
+        Powered by <a href='http://www.gohugo.io/'>Hugo</a> Theme By <a href='https://github.com/nodejh/hugo-theme-mini'>nodejh</a>
+      </div>
+    
+</footer>
+
+
+
+  </body>
+</html>
