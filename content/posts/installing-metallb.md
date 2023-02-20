@@ -495,7 +495,7 @@ homelab-pihole-989bd4c59-k9gd7   1/1     Running   0          19h
 From my local laptop that is connected to the tailnet, I should be able to use the dns services to lookup domain names. We can use `dig` to test this out. If you're on windows, you can use `nslookup` instead.
 
 {{< highlight bash >}}
-Kyles-MacBook-Pro:blog kylewilson$ dig @10.0.1.70 google.com
+$ dig @10.0.1.70 google.com
 
 ; <<>> DiG 9.10.6 <<>> @10.0.1.70 google.com
 ; (1 server found)
@@ -529,4 +529,4 @@ You can also navigate to the pihole dashboard from your browser
 
 
 # What's Next?
-Check out how to set up `cert-manager` alongside `ingress-nginx-controller` to access your services via hosts with https using pihole as a dns server.
+Check out how to set up  `ingress-nginx-controller` to access your services using pihole as a dns server with `cert-manager` to manage them certs.

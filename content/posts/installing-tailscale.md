@@ -31,7 +31,7 @@ sudo tailscale up{{< /highlight >}}
 > **_NOTE:_**  You'll need to authenticate against the link printed to the terminal if this is your first time adding a specific machine to your tailnet.
 
 You should then be able to see your machine on the [admin console](https://login.tailscale.com/admin/machines).
-![master-1 node connected](/images/installing-tailscale/connected-machine.jpeg)
+![master-1 node connected](/images/installing-tailscale/tailscale-machine.png)
 
 Success!
 
@@ -72,7 +72,7 @@ rtt min/avg/max/mdev = 6.112/7.080/8.386/0.958 ms
 ### MagicDNS
 [MagicDNS](https://tailscale.com/kb/1081/magicdns/) is a tailscale feature that automatically registers DNS names for devices in your network.
 
-This has a multitude of uses, but I mainly take advantage of the host names for ssh purposes. Remembering host names is a lot easier than memorizing ip addresses
+This has a multitude of uses, but I mainly take advantage of the host names for ssh purposes. Remembering host names is a lot easier than memorizing ip addresses.
 
 {{< highlight bash >}}
 $ ssh pi@master-1
@@ -87,4 +87,4 @@ $ ssh pi@100.72.32.68
 
 # Whats Next?
 
-Check out how to [install k3s](/posts/k3s-kubernetes-cluster/) and create a kubernetes cluster that talks through the tailnet.
+Check out how to [install k3s](/posts/k3s-kubernetes-cluster/) and create a kubernetes cluster that talks through our tailnet.
