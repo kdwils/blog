@@ -4,6 +4,7 @@ RUN apk add hugo
 
 WORKDIR /src
 COPY . .
+ENV HUGO_ENV production
 RUN hugo
 
 FROM nginx:alpine
