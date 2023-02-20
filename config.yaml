@@ -49,7 +49,7 @@ params:
   enableComments: false
   # To enable comments, you may need to set `googleAnalytics`
   enableGoogleAnalytics: true
-  googleAnalytics: G-3DRWKRSWYT
+  googleAnalytics: G-EPT6LGCQ2D
   # To enable table of content, you could set `showToc: true`, default is `false`
   showToc: true
   # To hidden powerBy message in the page footer, you could set: `showPowerBy: false`, default is `true`
