@@ -1,9 +1,8 @@
-baseURL: https://blog.kyledev.co
+baseURL: https://blog.int.kyledev.co
 languageCode: en-us
 title: Kyle Wilson
 theme: mini
 
-# Default content language, support en (English) / zh (Chinese) / nl (Dutch) / fr (French) / es (Spanish) / da (Danish), default 'en'
 defaultContentLanguage: en
 
 hasCJKLanguage: true
@@ -29,18 +28,14 @@ markup:
 
 # Social links in footer, support github,twitter,stackoverflow,facebook
 social:
-  # e.g.
   github: https://github.com/kdwils
-  # twitter: your-github-link
-  # stackoverflow: your-github-link
-  # facebook: your-facebook-link
 
 # Site parameters
 params:
   # Site Author
   author: Kyle Wilson
   # Author biography
-  bio: Software Engineer
+  bio: Software Guy
   # Site Description, used in HTML meat
   description: My homelab blog
 
@@ -51,7 +46,7 @@ params:
   # To enable RSS, you could set `enableRSS: true`, default is `true`
   enableRSS: true
   # To enable comments, you may need to set `disqusShortname`
-  enableComments: true
+  enableComments: false
   # To enable comments, you may need to set `googleAnalytics`
   enableGoogleAnalytics: false
   # To enable table of content, you could set `showToc: true`, default is `false`

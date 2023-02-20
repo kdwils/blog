@@ -44,7 +44,7 @@ speaker-gf2cm                 1/1     Running   0               5h22m
 
 ### Configuration
 
-We need to tell metallb what ip pool it has to pick from. You can use `10.0.1.0/24 CIDR` syntax here or a range such as `10.0.0.0-10.0.0.100`. To do this, we create an `IPAddressPool`.
+We need to tell metallb what ip pool it has to pick from. You can use `10.0.1.0/24` syntax here or a range such as `10.0.0.0-10.0.0.100`. To do this, we create an `IPAddressPool`.
 
 {{< highlight yaml >}}
 $ cat ip-address-pool.yaml
@@ -86,7 +86,7 @@ I want to access services metallb advertises in my `tailnet`, which is a good us
 
 ### Subnet Routers
 I am advertising the `10.0.1.0/24` CIDR for my subnet router. This means we will be able to access any ip address in that range from devices that are connected to my `tailnet`, even if we I am not connected to the same local network. This only needs to be done on whichever node you want to use as a subnet router.
-> **_NOTE:_**  The ip range that you gave metallb to use need to fall under the CIDR for your subrouter. Check out https://www.ipaddressguide.com/cidr to verify your ip range is correct if you're unsure.
+> **_NOTE:_**  The ip range that you gave metallb to use need to fall under the CIDR for your subrouter. If you're unsure, check out https://www.ipaddressguide.com/ to verify your ip range is correct.
 
 We'll need to choose a machine to act as our subnet router and rerun tailscale up advertising the routes we want to expose to the tailnet.
 {{< highlight bash >}}
@@ -123,6 +123,7 @@ $ kubectl create namespace pihole
 
 First, we need to set up some persistance for our pihole deployment. This step is really optional if you don't plan to run pihole in your cluster long term. I specifically set up the `PersistentVolume` on my `nuc` machine since that node has extra storage to go around.
 
+{{< details "PiHole Storage YAML" >}}
 {{< highlight yaml >}}
 apiVersion: v1
 kind: PersistentVolume
@@ -165,6 +166,7 @@ spec:
       pv: pihole
   storageClassName: local-storage
 {{< /highlight >}}
+{{< /details >}}
 
 Next, let's take a look at the services we are going to deploy.
 
@@ -176,6 +178,7 @@ Because `homelab-pihole-dns-tcp` listens on **TCP** and `homelab-pihole-dns-udp`
 
 The annotation `metallb.universe.tf/allow-shared-ip` tells metallb to allow this. Each service that will be sharing an IP is required to have the annotation.
 
+{{< details "PiHole Services YAML" >}}
 {{< highlight yaml >}}
 apiVersion: v1
 kind: Service
@@ -243,9 +246,12 @@ spec:
     app: pihole
     release: homelab
 {{< /highlight >}}
+{{< /details >}}
+
 
 Here is the full yaml I am using. You can leave out the custom dnsmaq config map and remove the volume from the deployment. We will be covering those in a later post.
 
+{{< details "Full PiHole Kubernetes YAML" >}}
 {{< highlight yaml >}}
 apiVersion: v1
 kind: Secret
@@ -463,11 +469,12 @@ spec:
           name: homelab-pihole-custom-dnsmasq
         name: custom-dnsmasq
 {{< /highlight >}}
+{{< /details >}}
 
 You can check that your services got created. Note the external-ips that got assigned to our services. The dns services should be sharing whatever ip you gave them, and the pihole-web service should have its own ip.
 
 {{< highlight bash >}}
-Kyles-MacBook-Pro:blog kylewilson$ kubectl get svc -n pihole
+$ kubectl get svc -n pihole
 NAME                     TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
 homelab-pihole-dns-tcp   LoadBalancer   10.43.75.7      10.0.1.70     53:32441/TCP                 20h
 homelab-pihole-dns-udp   LoadBalancer   10.43.242.253   10.0.1.70     53:30206/UDP                 20h
@@ -477,7 +484,7 @@ homelab-pihole-web       LoadBalancer   10.43.123.96    10.0.1.71     80:31059/T
 And the pihole pod running
 
 {{< highlight bash >}}
-Kyles-MacBook-Pro:blog kylewilson$ kubectl get pods -n pihole
+$ kubectl get pods -n pihole
 NAME                             READY   STATUS    RESTARTS   AGE
 homelab-pihole-989bd4c59-k9gd7   1/1     Running   0          19h
 {{< /highlight >}}
