@@ -145,7 +145,7 @@ namespace/go-hello created
 
 Next, the wildcard certificate.
 
-We need to tell replicated which namespaces to replicate the tls secret to. Check out the `secretTemplate` in our certificate.
+We need to tell `reflector` which namespaces to replicate the tls secret to. Check out the `secretTemplate` in our certificate.
 
 {{< highlight yaml >}}
 apiVersion: cert-manager.io/v1
@@ -169,7 +169,7 @@ spec:
     - "*.int.kyledev.co"
 {{< /highlight >}}
 
-Wait for your certificate to become ready. Replicated should create the certificate secret in our `go-hello` namespace automatically.
+Wait for your certificate to become ready. `Reflected` should create the certificate secret in our `go-hello` namespace automatically.
 
 {{< highlight bash >}}
 $ kubectl get cert -n cert-manager

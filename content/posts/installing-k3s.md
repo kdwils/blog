@@ -3,7 +3,7 @@ author = "Kyle Wilson"
 title = "K3s Kubernetes Cluster"
 date = "2023-02-15"
 description = "K3s on RPIs"
-summary = "The creation of my homelab: a k3s kubernetes cluster consisting of raspberry pis."
+summary = "The creation of my homelab: a k3s kubernetes cluster consisting of RPIs."
 tags = [
     "homelab",
     "k3s"

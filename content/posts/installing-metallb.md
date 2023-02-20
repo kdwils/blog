@@ -3,7 +3,7 @@ author = "Kyle Wilson"
 title = "Installing Metallb on K3s RPI cluster with tailscale"
 date = "2023-02-15"
 description = "Metallb on RPIs with tailscale"
-summary = "Metallb on bare-metal k3s raspberry pi kubernetes cluster. Testing the metallb installation by deploying pihole. Learn how to get pihole ad blocking for your entire tailnet."
+summary = "Metallb on bare-metal k3s RPIs kubernetes cluster. Testing the metallb installation by deploying pihole. Learn how to get pihole ad blocking for your entire tailnet."
 tags = [
     "homelab",
     "metallb",
