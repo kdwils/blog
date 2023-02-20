@@ -262,7 +262,7 @@ homelab-pihole-989bd4c59-jjdcj   0/1     Running   0          9s
 
 ## Testing it all out
 
-We'll be deploying a sample hello world service to test it all out. We'll be using a [go service](https://github.com/kdwils/go-hello) I used for testing our CI/CD with tailscale and github actions. I'll probably create a post for this later.
+We'll be deploying a sample hello world service to test it all out. We'll be using a [go service](https://github.com/kdwils/go-hello) I used for testing out CI/CD with tailscale and github actions. I'll probably create a post for this later.
 
 First, lets note the annotations on the Ingress.
 
