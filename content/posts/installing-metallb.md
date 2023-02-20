@@ -46,8 +46,9 @@ speaker-gf2cm                 1/1     Running   0               5h22m
 
 We need to tell metallb what ip pool it has to pick from. You can use `10.0.1.0/24 CIDR` syntax here or a range such as `10.0.0.0-10.0.0.100`. To do this, we create an `IPAddressPool`.
 
-`kubectl apply -f <ip-address-file>`
 {{< highlight yaml >}}
+$ cat ip-address-pool.yaml
+
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -60,8 +61,9 @@ spec:
 
 Next, we tell metallb how we want to advertise our services.
 
-`kubectl apply -f <advertisement-file>`
 {{< highlight yaml >}}
+$ cat advertisement.yaml
+
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
@@ -71,6 +73,8 @@ spec:
   ipAddressPools:
     - load-balancer
 {{< /highlight >}}
+
+Run a `kubectl apply` to your metallb namespace for your address pool and advertisement configs.
 
 ---
 
@@ -82,7 +86,7 @@ I want to access services metallb advertises in my `tailnet`, which is a good us
 
 ### Subnet Routers
 I am advertising the `10.0.1.0/24` CIDR for my subnet router. This means we will be able to access any ip address in that range from devices that are connected to my `tailnet`, even if we I am not connected to the same local network. This only needs to be done on whichever node you want to use as a subnet router.
-> **_NOTE:_**  The ip range that you gave metallb to use need to fall under the CIDR for your subrouter. Check out https://www.ipaddressguide.com/cidr to verify your ip range is correct if you're not using CIDR format.
+> **_NOTE:_**  The ip range that you gave metallb to use need to fall under the CIDR for your subrouter. Check out https://www.ipaddressguide.com/cidr to verify your ip range is correct if you're unsure.
 
 We'll need to choose a machine to act as our subnet router and rerun tailscale up advertising the routes we want to expose to the tailnet.
 {{< highlight bash >}}
@@ -100,6 +104,7 @@ Approve your subnet route(s)
 
 Our subnet router should be ready to use!
 
+---
 # Testing out metallb & tailscale subnet router
 
 To test out our new setup, we're going to deploy pihole to our cluster, have metallb assign it an external ip, and use it to do a dns lookup for google.com.
@@ -110,6 +115,11 @@ Pi-hole is a general purpose network-wide ad-blocker that protects your network 
 ### Defining our pihole deployment
 
 Check out these [helm charts](https://github.com/MoJo2600/pihole-kubernetes) for setting up your deployment.
+
+Lets create a namespace for pihole to live in.
+{{< highlight bash >}}
+$ kubectl create namespace pihole
+{{< /highlight >}}
 
 First, we need to set up some persistance for our pihole deployment. This step is really optional if you don't plan to run pihole in your cluster long term. I specifically set up the `PersistentVolume` on my `nuc` machine since that node has extra storage to go around.
 
@@ -234,24 +244,9 @@ spec:
     release: homelab
 {{< /highlight >}}
 
-We are also assigning the pihole-web component its own IP address so we can access it in the browser.
-
-{{< highlight yaml >}}
-apiVersion: v1
-kind: Service
-metadata:
-  name: homelab-pihole-web
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: 10.0.1.71
-{{< /highlight >}}
-
 Here is the full yaml I am using. You can leave out the custom dnsmaq config map and remove the volume from the deployment. We will be covering those in a later post.
 
-`kubectl create namespace pihole`
-
-`kubectl apply -f <your-yaml-file> -n pihole`
 {{< highlight yaml >}}
----
 apiVersion: v1
 kind: Secret
 metadata:
@@ -263,7 +258,7 @@ metadata:
     release: homelab
 type: Opaque
 data:
-  password: "YWRtaW4="
+  password: "Y2hhbmdlLW1l"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -277,7 +272,6 @@ metadata:
 data:
   02-custom.conf: |
     addn-hosts=/etc/addn-hosts
-    address=/int.kyledev.co/10.0.1.0
   addn-hosts: |
   05-pihole-custom-cname.conf: |
 ---
