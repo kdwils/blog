@@ -3,7 +3,7 @@ author = "Kyle Wilson"
 title = "Installing Metallb on K3s RPI cluster with tailscale"
 date = "2023-02-15"
 description = "Metallb on RPIs with tailscale"
-summary = "Metallb on bare-metal k3s raspberry pi kubernetes cluster. Testing the metallb installation by deploying pihole. We'll be using the DNS features of pihole later."
+summary = "Metallb on bare-metal k3s raspberry pi kubernetes cluster. Testing the metallb installation by deploying pihole. Learn how to get pihole ad blocking for your entire tailnet."
 tags = [
     "homelab",
     "metallb",
@@ -527,6 +527,18 @@ google.com.		150	IN	A	142.250.123.113
 You can also navigate to the pihole dashboard from your browser
 ![pihole dashboard](/images/installing-metallb/pihole-dashboard.png)
 
+## Tailnet wide ad blocking
 
+If you're interesting in getting ad blocking for any device connected to your tailnet via PiHole, you can configure tailscale to use your cluster pihole deployment.
+
+Navigate over to the [DNS page](https://login.tailscale.com/admin/dns) in your tailnet and add a custom nameserver. We'll want to add the external-ip metallb assigned to the pihole services.
+![add pihole nameserver](/images/installing-metallb/pihole-dns-tailscale.png)
+
+Enable local DNS override.
+![override local nameserver](/images/installing-metallb/override-local-nameserver.png)
+
+Now any device on your tailnet gets the benefit of pihole adblocking while connected.
+
+> **_NOTE:_** If your pihole services are down you are going to run into trouble with DNS lookups. You may want to consider a backup here or make sure your pihole services are highly available.
 # What's Next?
 Check out how to set up  `ingress-nginx-controller` to access your services using pihole as a dns server with `cert-manager` to manage them certs.
