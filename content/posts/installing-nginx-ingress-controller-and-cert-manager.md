@@ -3,7 +3,7 @@ author = "Kyle Wilson"
 title = "Setting up ingress-nginx-controller and cert-manager"
 date = "2023-02-20"
 description = "Setting up ingress-nginx-controller and cert-manager using DNS-01 challenge with cloudflare. We'll be using our pihole deployment for local DNS lookups pointing to our new ingress point."
-summary = "Setting up ingress-nginx-controller and cert-manager"
+summary = "Setting up ingress-nginx-controller and wildcard certificates using cert-manager DNS-01 challenge with cloudflare. We'll be using our pihole deployment for local DNS lookups pointing to our new ingress controller."
 tags = [
     "homelab",
     "ingress-nginx-controller",
