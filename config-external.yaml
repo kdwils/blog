@@ -35,7 +35,7 @@ params:
   # Site Author
   author: Kyle Wilson
   # Author biography
-  bio: Software Guy
+  bio: software guy
   # Site Description, used in HTML meat
   description: My homelab blog
 
