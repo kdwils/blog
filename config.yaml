@@ -1,4 +1,4 @@
-baseURL: https://blog.int.kyledev.co
+baseURL: https://blog.kyledev.co
 languageCode: en-us
 title: homelab things
 theme: hugo-mini
