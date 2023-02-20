@@ -541,4 +541,4 @@ Now any device on your tailnet gets the benefit of pihole adblocking while conne
 
 > **_NOTE:_** If your pihole services are down you are going to run into trouble with DNS lookups. You may want to consider a backup here or make sure your pihole services are highly available.
 # What's Next?
-Check out how to set up  `ingress-nginx-controller` to access your services using pihole as a dns server with `cert-manager` to manage them certs.
+Check out my next [post](/posts/setting-up-ingress-nginx-controller-and-cert-manager/) on how to set up `ingress-nginx-controller` to access your services using pihole as a dns server with `cert-manager` to manage them certs.
