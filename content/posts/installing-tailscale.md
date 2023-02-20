@@ -10,7 +10,7 @@ tags = [
 ]
 +++
 
-# Tailscale
+## Tailscale
 
 [Tailscale](https://tailscale.com/kb/1151/what-is-tailscale/) is a VPN service that makes the devices and applications you own accessible anywhere in the world. Tailscale will create a virtual private network for you, aka the `tailnet`, where you can safely route to your devices.
 
