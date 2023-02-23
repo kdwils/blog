@@ -135,7 +135,7 @@ NAME                  READY   AGE
 letsencrypt-staging   True    5d21h
 {{< /highlight >}}
 
-Create the wildcard certificate. We want this secret to be replicated into a namespace called `go-hello`, so go ahead and create that namespace now.
+I want the certificate secret to be created in the namespace `go-hello`, so go ahead and create that namespace now if you're following along.
 
 {{< highlight bash >}}
 $ kubectl create namespace go-hello
@@ -169,7 +169,7 @@ spec:
     - "*.int.kyledev.co"
 {{< /highlight >}}
 
-Wait for your certificate to become ready. `Reflected` should create the certificate secret in our `go-hello` namespace automatically.
+Wait for your certificate to become ready. `Reflector` should create the certificate secret in our `go-hello` namespace automatically.
 
 {{< highlight bash >}}
 $ kubectl get cert -n cert-manager
@@ -445,7 +445,7 @@ spec:
     - "*.int.kyledev.co"
 {{< /highlight >}}
 
-Our updated ingress will look largely the same, however we'll point to our new prod `ClusterIssuer` with the annotation `cert-manager.io/cluster-issuer: letsencrypt-prod`
+Our updated ingress will look largely the same, however we'll point to our new prod `ClusterIssuer` with the annotation `cert-manager.io/cluster-issuer: letsencrypt-prod`. Additionally, we need to point to he new tls secret `wildcard-kyledev-tls-prod`.
 
 {{< highlight yaml >}}
 apiVersion: networking.k8s.io/v1
@@ -480,4 +480,4 @@ And it should magically work!
 
 # Whats Next?
 
-Up next will be how I deployed this blog using cloudflare tunnels.. once I actually write the post.
+Interested in how I deploy my blog? Take a peek at how I used a [cloudflare tunnel](/posts/exposing-my-blog-using-a-cloudflare-tunnel/).
