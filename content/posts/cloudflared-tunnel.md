@@ -176,7 +176,7 @@ data:
 {{< /details >}}
 
 {{< highlight bash >}}
-$ kubectly apply -f cloudflared.yaml
+$ kubectl apply -f cloudflared.yaml
 {{< /highlight >}}
 
 Check out the deployment, mine has been running for a few days.
