@@ -15,7 +15,7 @@ spec:
       containers:
         - name: blog
           imagePullPolicy: Always
-          image: myapp
+          image: ghcr.io/kdwils/blog:main
           resources:
             limits:
               memory: "128Mi"

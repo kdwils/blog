@@ -1,11 +1,3 @@
-kind: Kustomization
-apiVersion: kustomize.config.k8s.io/v1beta1
-
-images:
-  - name: myapp
-    newName: ghcr.io/kdwils/blog
-    newTag: main
-
 resources:
   - deployment.yaml
   - service.yaml
