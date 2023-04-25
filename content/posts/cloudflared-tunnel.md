@@ -1,15 +1,17 @@
 +++
 author = "Kyle Wilson"
-title = "Exposing my blog using a cloudflare tunnel"
+title = "Exposing services in my cluster using cloudflare tunnels"
 date = "2023-02-23"
 description = "Exposing my blog using a cloudflare tunnel without needing to port forward or expose my local network."
 summary = "Exposing my blog using a cloudflare tunnel without needing to port forward or expose my local network."
 tags = [
-    "homelab",
     "k3s",
-    "cloudflare tunnel"
+    "cloudflared"
 ]
 +++
+
+# Exposing services in my cluster using cloudflare tunnels
+I've been looking into ways to safely expose services in my k3s cluster to the internet. Seeing how cloudflare tunnels are free, and look pretty simple to set up, I figured I would give it a try. In fact, it's how I expose the blog you're reading right now.
 
 # Cloudflare Tunnels
 Cloudflare Tunnel provides you with a secure way to connect your resources to Cloudflare without a publicly routable IP address. Instead, a lightweight daemon in your infrastructure called cloudflared creates outbound-only connections to Cloudflare’s edge.
@@ -188,6 +190,15 @@ cloudflared-7b99d68b4-v6vfj   1/1     Running   0          3d2h
 {{< /highlight >}}
 
 At this point, I could reach my blog externally from my local network without having to port forward. Pretty cool stuff.
+
+I only wanted to expose my blog and only services selectively, but you could always wildcard an ingress entry to point to your ingress-controller, allowing you to expose all services running in your cluster.
+
+{{< highlight yaml >}}
+ingress:
+  - hostname: *.kyledev.co
+    service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:443
+{{< /highlight >}}
+
 
 # What's next?
 How I set up CI/CD flows using github actions and tailscale to update deployments in my homelab.. once I write the post.

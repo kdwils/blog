@@ -5,16 +5,16 @@ date = "2023-02-15"
 description = "Tailscale on RPIs"
 summary = "Installing tailscale on my machines to make them accessible from anywhere in the world."
 tags = [
-    "homelab",
     "tailscale"
 ]
 +++
 
+# Tailscale on RPIs
+In my home kubernetes cluster, I have 4 raspberry PIs and an intel nuc. I want to be able to communicate with my cluster and nodes when I am not home. Tailscale seemed like an easy solution to my problem. Additionally, its pretty simple to share my tailnet with friends + family.
+
 ## Tailscale
 
 [Tailscale](https://tailscale.com/kb/1151/what-is-tailscale/) is a VPN service that makes the devices and applications you own accessible anywhere in the world. Tailscale will create a virtual private network for you, aka the `tailnet`, where you can safely route to your devices.
-
-In my home kubernetes cluster, I have 4 raspberry PIs and an intel nuc. I want to be able to communicate with my cluster and nodes when I am not home. Tailscale seemed like an easy solution to my problem.
 
 ### Sign up
 

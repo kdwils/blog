@@ -1,11 +1,10 @@
 +++
 author = "Kyle Wilson"
-title = "Installing Metallb on K3s RPI cluster with tailscale"
+title = "Loadbalancing with metallb for my bare-metal cluster"
 date = "2023-02-15"
-description = "Metallb on RPIs with tailscale"
-summary = "Metallb on bare-metal k3s RPIs kubernetes cluster. Testing the metallb installation by deploying pihole. Learn how to get pihole ad blocking for your entire tailnet."
+description = "Metallb "
+summary = "Metallb in k3s RPIs kubernetes cluster. Testing the metallb installation by deploying pihole. Using pihole ad blocking for the entire tailnet."
 tags = [
-    "homelab",
     "metallb",
     "k3s",
     "tailscale",
@@ -14,12 +13,15 @@ tags = [
 ]
 +++
 
-## Metallb
+# Loadbalancing with metallb for my bare-metal cluster
+Now that we have k3s installed and our nodes communicating over the tailnet, we need a way to access the services running in my cluster. Because my cluster is bare-metal 
+
+# Metallb
 [MetalLB](https://metallb.universe.tf/) is a load-balancer implementation for bare-metal Kubernetes clusters, using standard routing protocols.
 
 In short, it allows you to create Kubernetes services of type `LoadBalancer` in kubernetes clusters that don’t run on a cloud provider, such as bare-metal clusters.
 
-### Installing the controller
+## Installing the controller
 
 Head over to the installation [docs](https://metallb.universe.tf/installation/). I personally chose to install by manifest, which creates a `metallb-system` namespace for us.
 
@@ -84,7 +86,7 @@ Check out tailscales [kb article](https://tailscale.com/kb/1019/subnets/) on sub
 
 I want to access services metallb advertises in my `tailnet`, which is a good use case for a subnet router.
 
-### Subnet Routers
+## Subnet Routers
 I am advertising the `10.0.1.0/24` CIDR for my subnet router. This means we will be able to access any ip address in that range from devices that are connected to my `tailnet`, even if we I am not connected to the same local network. This only needs to be done on whichever node you want to use as a subnet router.
 > **_NOTE:_**  The ip range that you gave metallb to use need to fall under the CIDR for your subrouter. If you're unsure, check out https://www.ipaddressguide.com/ to verify your ip range is correct.
 
@@ -93,7 +95,7 @@ We'll need to choose a machine to act as our subnet router and rerun tailscale u
 sudo tailscale up --advertise-routes=10.0.1.0/24
 {{< /highlight >}}
 
-### Approving our Subnet Router
+## Approving our Subnet Router
 Once you've ran some flavor of `sudo tailscale up`, navigate over to your tailnet [admin console](https://login.tailscale.com/admin/machines).
 
 Lets approve our subnet and disable key expiry. I've already disabled key expiry for this particular machine. Subnet routes can be approved under edit route settings.

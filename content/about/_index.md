@@ -1,26 +1,32 @@
 +++
 title = "About"
-description = "Hugo, the world's fastest framework for building websites"
-date = "2019-02-28"
-aliases = ["about-us", "about-hugo", "contact"]
-author = "Hugo Authors"
+description = "blog.kyledev.co"
+date = "2023-02-15"
+aliases = ["about"]
+author = "Kyle Wilson"
 enableComments = false
 +++
 
-Written in Go, Hugo is an open source static site generator available under the [Apache Licence 2.0.](https://github.com/gohugoio/hugo/blob/master/LICENSE) Hugo supports TOML, YAML and JSON data file types, Markdown and HTML content files and uses shortcodes to add rich content. Other notable features are taxonomies, multilingual mode, image processing, custom output formats, HTML/CSS/JS minification and support for Sass SCSS workflows.
+# Who
+My name is Kyle and I am a software engineer. Professionally, I work on a variety of things such as developing pipelines, automating software supply chain governance, and improving the developer experience when it comes to pushing code from the laptop to production. Casually, I like to spend my free time working on my homelab (okay its just a couple of raspberry pis).
 
-Hugo makes use of a variety of open source projects including:
+Born and raised in Pennsylvania. Go 'lers.
 
-* https://github.com/yuin/goldmark
-* https://github.com/alecthomas/chroma
-* https://github.com/muesli/smartcrop
-* https://github.com/spf13/cobra
-* https://github.com/spf13/viper
+Testicular cancer survivor <img src="/images/ribbon.svg" alt="lavender ribbon" width=20 height=20/>
 
-Hugo is ideal for blogs, corporate websites, creative portfolios, online magazines, single page applications or even a website with thousands of pages.
+# What
 
-Hugo is for people who want to hand code their own website without worrying about setting up complicated runtimes, dependencies and databases.
+This blog is a space for me to write about the tech things that I do at home. It serves as both documentation and a roadmap of my experiences as I learn new things.
 
-Websites built with Hugo are extremely fast, secure and can be deployed anywhere including, AWS, GitHub Pages, Heroku, Netlify and any other hosting provider.
+I am also interested in writing about my cancer experience and may add posts in the future.
 
-Learn more and contribute on [GitHub](https://github.com/gohugoio).
+# Where
+Most of my code and homelab infra configs are hosted on [Github](https://github.com/kdwils).
+
+# When
+
+There's no time like the present to make a blog.
+
+# Why
+
+ I'm not sure that anyone will ever read my posts.. but I am hoping that they help out at least one person. I found that tech blogs were often much more successful in helping me with my homelab than whatever official documentation was available and so I want to return the favor.

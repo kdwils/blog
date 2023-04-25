@@ -1,17 +1,19 @@
 +++
 author = "Kyle Wilson"
-title = "Setting up ingress-nginx-controller and cert-manager"
+title = "setting up local DNS using pihole and ingress-nginx-controller"
 date = "2023-02-20"
 description = "Setting up ingress-nginx-controller and cert-manager using DNS-01 challenge with cloudflare. We'll be using our pihole deployment for local DNS lookups pointing to our new ingress point."
-summary = "Setting up ingress-nginx-controller and wildcard certificates using cert-manager DNS-01 challenge with cloudflare. We'll be using our pihole deployment for local DNS lookups pointing to our new ingress controller."
+summary = "Setting up ingress-nginx-controller and getting certificates using cert-manager DNS-01 challenge with cloudflare. We'll be using our pihole deployment for local DNS lookups pointing to our new ingress controller."
 tags = [
-    "homelab",
     "ingress-nginx-controller",
     "cert-manager",
     "letsencrypt",
     "reflector"
 ]
 +++
+
+# Setting up local DNS using pihole and ingress-nginx-controller
+I don't want to memorize different IP addresses that metallb assigns to services running in my k3s cluster. I want a set up where `*.int.kyledev.co` routes to the ingress-controller running in my cluster. We can do that with pihole and ingress-nginx-controller.
 
 ## Reflector
 

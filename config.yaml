@@ -39,7 +39,7 @@ params:
   # Author biography
   bio: big software guy
   # Site Description, used in HTML meat
-  description: My homelab blog
+  description: A blog about the tech things i'm doing and other personal life matters
 
   ###########################################
   # Optional Configuration
