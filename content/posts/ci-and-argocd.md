@@ -2,8 +2,8 @@
 author = "Kyle Wilson"
 title = "Deploying applications to my cluster using Github Actions and ArgoCD"
 date = "2023-04-25"
-description = "Check out how I created a reusable github action for building, pushing, and signing docker image. ArgoCD then syncs changes to my homelab."
-summary = "Check out how I created a reusable github action for building, pushing, and signing docker image. ArgoCD then syncs changes to my homelab."
+description = "Check out how I created a reusable github action for building, pushing, and signing docker images. ArgoCD then syncs changes to my homelab."
+summary = "Check out how I created a reusable github action for building, pushing, and signing docker images. ArgoCD then syncs changes to my homelab."
 tags = [
     "github actions",
     "argocd",
@@ -192,6 +192,23 @@ spec:
 
 ### Organizing Applications
 
-I define my apps in a [separate repo](https://github.com/kdwils/homelab). This repo also contains manifests for critical infra related software for my cluster, such as `metallb`, `ingress-nginx`, or `cert-manager`. Any new apps can simply be created under the /argocd/apps [overlay](https://github.com/kdwils/homelab/tree/main/argocd/apps) and they will be automagically sync to my cluster.
+I define my apps in a [separate repo](https://github.com/kdwils/homelab). This repo also contains manifests for critical infra related software for my cluster, such as `metallb`, `ingress-nginx`, or `cert-manager`. Any new apps can simply be created under the /argocd/apps [overlay](https://github.com/kdwils/homelab/tree/main/apps) and they will be automagically sync to my cluster.
 
 For my needs, this setup works nicely as it is extremely simple to add new apps. Additionally, whenever I need to make a change I can simply push the new manifest to the homelab repo.
+
+### ArgoCD-image-updater
+
+Unfortunately, ArogCD wont pull image changes if you are using an image tag such as `main` or `latest` (which I am). ArgoCD-image-updater will handle pulling the latest image for your application if you configure it correctly.
+
+This did feel like a bit of a pain to set up initially. You can see my configurations [here](https://github.com/kdwils/homelab/tree/main/argocd-image-updater) for the image-updater installation. Side note, if you're using `ghcr.io` as your registry, you need to use a personal access token as your password.
+
+By adding these annotations for my blog `Application`, the image-updater will sync the latest image to my cluster.
+
+{{< highlight yaml >}}
+annotations:
+  argocd-image-updater.argoproj.io/image-list: blog=ghcr.io/kdwils/blog
+  argocd-image-updater.argoproj.io/blog.platforms: linux/arm64,linux/amd64
+  argocd-image-updater.argoproj.io/blog.update-strategy: latest
+{{< /highlight >}}
+
+This seems to work pretty well, however I believe I need to configure credentials for each registry. It seems you can also have the updater commit a new image sha to your repositories as well so long as you're using `helm` or `kustomize`.
