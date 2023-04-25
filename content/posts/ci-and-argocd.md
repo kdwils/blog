@@ -70,16 +70,16 @@ The docker login action allows you to log into a registry for pushing an image. 
 
 ### Docker
 
-My `k3s` cluster has a mix of different architectures in it. I have an intel nuc which is `amd64`, two 4th gen raspberry pis that are `arm64`, and an older 3rd gen raspberry pi that is `armhf`. This meant that I needed to be able to build images for all three different architectures or specify a `nodeSelector` in my manifests. I chose to learn how to build imags for multiple architectures.
+My `k3s` cluster has a mix of different architectures in it. I have an intel nuc which is `amd64`, two 4th gen raspberry pis that are `arm64`, and an older 3rd gen raspberry pi that is `armhf`. This meant that I needed to be able to build images for all three different architectures or specify a `nodeSelector` in my manifests. I chose to learn how to build images for multiple architectures.
 
 Docker has some cool github actions for images:
 
 * [metadata-action](https://github.com/docker/metadata-action) generates metadata for your images such as labels or tags.
-* [setup-qemu-action](https://github.com/docker/setup-qemu-action) sets up qemu for emulation.
+* [setup-qemu-action](https://github.com/docker/setup-qemu-action) sets up qemu for emulating operating systems.
 * [setup-buildx-action](https://github.com/docker/setup-buildx-action) sets up docker buildx for building the image.
-* [build-push-action](https://github.com/docker/build-push-action) can build your images and push the artifact to the registry you logged into earlier. You can also input tags and labels from the metadata-action.
+* [build-push-action](https://github.com/docker/build-push-action) can build and push your image to the registry you logged into earlier. You can also input tags and labels from the metadata-action.
 
-{{< details "The combination of these actions is how I build my images." >}}
+{{< details "I use all of these actions in my workflow." >}}
 {{< highlight yaml >}}
 - name: Docker metadata
 id: meta
@@ -133,9 +133,9 @@ with:
 
 ### How do I use my workflow?
 
-You'll need to create a `.github/workflows` folder with your flow defined. Then you can point to the workflow so long as it is in a public repository.
+You'll need to create a `.github/workflows` folder a yaml file for the flow. Then you can point to the workflow so long as it is in a public repository.
 
-{{< details "For example, here is the [yaml](https://github.com/kdwils/blog/blob/main/.github/workflows/ci.yaml) this blog uses to build an image." >}}
+{{< details "For example, here is the [yaml](https://github.com/kdwils/blog/blob/main/.github/workflows/ci.yaml) this blog uses for CI." >}}
 {{< highlight yaml >}}
 name: Build Push Sign
 on:
@@ -156,13 +156,13 @@ jobs:
 
 ## ArgoCD
 
-Check out their [official docs](https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/) for installation on your cluster. 
+Check out the [official docs](https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/) for installation on your cluster. 
 
 ### Argo Applications
 
-An `Application` is the definition for telling `ArgoCD` how to sync your app to your cluster.
+An `Application` is the definition for telling `ArgoCD` how to sync an app to your cluster.
 
-Because `ArgoCD` is deployed in my `k3s` cluster, we can point the destination server to default kubernetes svc.
+Because `ArgoCD` is deployed in my `k3s` cluster, we can point the destination server to default kubernetes svc, but you could point to a remote cluster as well.
 
 The manifests for this blog live at `https://github.com/kdwils/blog/tree/main/deploy/homelab` so I need to tell ArgoCD to look at the `/deploy/homelab` overlay.
 
