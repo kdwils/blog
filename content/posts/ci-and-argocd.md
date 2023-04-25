@@ -1,9 +1,9 @@
 +++
 author = "Kyle Wilson"
-title = "How I deploy applications to my cluster using github actions and argocd"
+title = "Deploying applications to my cluster using Github Actions and ArgoCD"
 date = "2023-04-25"
-description = "How I deploy applications to my cluster using github actions and argocd"
-summary = "How I deploy applications to my cluster using github actions and argocd"
+description = "Check out how I created a reusable github action for building, pushing, and signing docker image. ArgoCD then syncs changes to my homelab."
+summary = "Check out how I created a reusable github action for building, pushing, and signing docker image. ArgoCD then syncs changes to my homelab."
 tags = [
     "github actions",
     "argocd",
@@ -194,4 +194,4 @@ spec:
 
 I define my apps in a [separate repo](https://github.com/kdwils/homelab). This repo also contains manifests for critical infra related software for my cluster, such as `metallb`, `ingress-nginx`, or `cert-manager`. Any new apps can simply be created under the /argocd/apps [overlay](https://github.com/kdwils/homelab/tree/main/argocd/apps) and they will be automagically sync to my cluster.
 
-For my needs, this setup works nicely as it is extremely simple to add new apps.
+For my needs, this setup works nicely as it is extremely simple to add new apps. Additionally, whenever I need to make a change I can simply push the new manifest to the homelab repo.
