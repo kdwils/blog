@@ -1,6 +1,6 @@
 +++
 author = "Kyle Wilson"
-title = "Loadbalancing with Metallb for my bare-metal cluster"
+title = "Loadbalancing with Metallb on my bare-metal cluster"
 date = "2023-02-15"
 description = "Metallb "
 summary = "Metallb in k3s RPIs kubernetes cluster. Testing the metallb installation by deploying pihole. Using pihole ad blocking for the entire tailnet."
