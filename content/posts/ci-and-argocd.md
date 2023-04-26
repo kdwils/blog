@@ -16,13 +16,13 @@ tags = [
 
 At work, we follow the practice of a separate code repo and deployment repo for `CI` and `CD`. This allows for the decoupling of code and configurations for deployment. However, in my home cluster, I didn't really have a need to decouple the code and the deployment.
 
-Given that I was already hosting my code on github, the obvious solution for `CI` was github actions. I knew that I wanted to create a reusable action so that I wouldn't have to copy paste the entire flow for each new service I created. Lastly, integrating with other open source build tools, such as `docker buildx` for multi-arch image build support or `cosign` for signing, seemed to be simple as well.
+Given that I was already hosting my code on github, the obvious solution for `CI` was github actions. I knew that I wanted to create a reusable action so that I wouldn't have to copy paste the entire flow for each new service I created. Lastly, integrating with other open source build tools, such as `docker buildx` for multi-arch image support or `cosign` for signing, seemed to be simple as well.
 
 Originally for `CD`, I created flows for updating a deploy repo with a new image tag, but I was never truly satisfied with it as a solution. Additionally, I chose to build the kubernetes manfiest using `kustomize` and run a `kubectl apply` afterwards to apply the new changes in my flows. `ArgoCD` eliminated all of these steps and I could self host it as well in my `k3s` cluster. Seemed like a win-win for me. 
 
 ## Github Actions
 
-The workflow I am going to build out is avaiable on my [github repo](https://github.com/kdwils/homelab-workflow/blob/main/.github/workflows/build-push-sign.yml).
+The workflow I am going to build out is available on my [github repo](https://github.com/kdwils/homelab-workflow/blob/main/.github/workflows/build-push-sign.yml).
 
 ### User Inputs
 
@@ -192,7 +192,7 @@ spec:
 
 ### Organizing Applications
 
-I define my apps in a [separate repo](https://github.com/kdwils/homelab). This repo also contains manifests for critical infra related software for my cluster, such as `metallb`, `ingress-nginx`, or `cert-manager`. Any new apps can simply be created under the /argocd/apps [overlay](https://github.com/kdwils/homelab/tree/main/apps) and they will be automagically sync to my cluster.
+I define my apps in a [separate repo](https://github.com/kdwils/homelab). This repo also contains manifests for critical infra related software for my cluster, such as `metallb`, `ingress-nginx`, and `cert-manager`. Any new apps can simply be created under the /argocd/apps [overlay](https://github.com/kdwils/homelab/tree/main/apps) and they will be automagically sync to my cluster.
 
 For my needs, this setup works nicely as it is extremely simple to add new apps. Additionally, whenever I need to make a change I can simply push the new manifest to the homelab repo.
 
