@@ -1,9 +1,9 @@
 +++
 author = "Kyle Wilson"
-title = "Installing k3s nd the cretiong of my kubernetes cluster"
+title = "Installing k3s and the creation of my Kubernetes cluster"
 date = "2023-02-15"
-description = "K3s on RPIs"
-summary = "The creation of my a k3s kubernetes cluster consisting of RPIs."
+description = "The creation of my a k3s Kubernetes cluster consisting of raspberry pis."
+summary = "The creation of my a k3s Kubernetes cluster consisting of raspberry pis."
 tags = [
     "k3s",
     "raspberry pi"
