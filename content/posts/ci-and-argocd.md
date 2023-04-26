@@ -211,4 +211,4 @@ annotations:
   argocd-image-updater.argoproj.io/blog.update-strategy: latest
 {{< /highlight >}}
 
-This seems to work pretty well, however I believe I need to configure credentials for each registry. It seems you can also have the updater commit a new image sha to your repositories as well so long as you're using `helm` or `kustomize`.
+This seems to work pretty well, however I believe I need to configure credentials for each registry. It seems you can also have the updater commit a new image sha to your repositories as well so long as you're using `helm` or `kustomize` which would eliminte the need to constantly poll the registries.
