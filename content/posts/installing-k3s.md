@@ -1,6 +1,6 @@
 +++
 author = "Kyle Wilson"
-title = "K3s Kubernetes Cluster"
+title = "Installing k3s nd the cretiong of my kubernetes cluster"
 date = "2023-02-15"
 description = "K3s on RPIs"
 summary = "The creation of my a k3s kubernetes cluster consisting of RPIs."

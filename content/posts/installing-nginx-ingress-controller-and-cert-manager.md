@@ -1,6 +1,6 @@
 +++
 author = "Kyle Wilson"
-title = "Setting up local DNS using pihole and ingress-nginx-controller"
+title = "Setting up DNS on my Tailnet using pihole and ingress-nginx-controller"
 date = "2023-02-20"
 description = "Setting up ingress-nginx-controller and cert-manager using DNS-01 challenge with cloudflare. We'll be using our pihole deployment for local DNS lookups pointing to our new ingress point."
 summary = "Setting up ingress-nginx-controller and getting certificates using cert-manager DNS-01 challenge with cloudflare. We'll be using our pihole deployment for local DNS lookups pointing to our new ingress controller."

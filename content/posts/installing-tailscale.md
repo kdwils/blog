@@ -1,6 +1,6 @@
 +++
 author = "Kyle Wilson"
-title = "Tailscale on RPIs"
+title = "Configuring My Tailscale Tailnet"
 date = "2023-02-15"
 description = "Tailscale on RPIs"
 summary = "Installing tailscale on my machines to make them accessible from anywhere in the world."
