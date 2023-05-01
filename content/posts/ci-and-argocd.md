@@ -133,7 +133,7 @@ with:
 
 ### How do I use my workflow?
 
-You'll need to create a `.github/workflows` folder a yaml file for the flow. Then you can point to the workflow so long as it is in a public repository.
+You'll need to create a `.github/workflows` folder and create yaml file for the flow, such as `ci.yaml`. Then you can point to the workflow so long as it is in a public repository.
 
 {{< details "For example, here is the [yaml](https://github.com/kdwils/blog/blob/main/.github/workflows/ci.yaml) this blog uses for CI." >}}
 {{< highlight yaml >}}
