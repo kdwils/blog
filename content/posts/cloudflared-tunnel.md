@@ -201,4 +201,4 @@ ingress:
 
 
 # What's next?
-How I set up CI/CD flows using github actions and tailscale to update deployments in my homelab.. once I write the post.
+How I set up CI/CD flows using github actions and tailscale to update deployments in my homelab, check out the [post](/posts/setting-up-ingress-nginx-controller-and-cert-manager/).

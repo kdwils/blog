@@ -482,4 +482,4 @@ And it should magically work!
 
 # Whats Next?
 
-Interested in how I deploy my blog? Take a peek at how I used a [cloudflare tunnel](/posts/exposing-my-blog-using-a-cloudflare-tunnel/).
+Interested in how I deploy my blog? Take a peek at how I used a [cloudflare tunnel](/posts/exposing-services-in-my-cluster-using-cloudflare-tunnels/).
