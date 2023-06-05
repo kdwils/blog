@@ -1,63 +1,116 @@
-baseURL: https://blog.kyledev.co
-languageCode: en-us
-title: homelab things
-theme: hugo-mini
+baseURL: "https://blog.kyledev.co/"
+title: blog.kyledev.co
+paginate: 5
+theme: PaperMod
+
+enableInlineShortcodes: true
+enableRobotsTXT: true
+buildDrafts: false
+buildFuture: false
+buildExpired: false
+enableEmoji: true
+pygmentsUseClasses: true
 googleAnalytics: G-EPT6LGCQ2D
 
-defaultContentLanguage: en
+minify:
+  disableXML: true
+  minifyOutput: true
 
-hasCJKLanguage: true
-permalinks:
-  posts: /posts/:title/
+languages:
+  en:
+    languageName: "English"
+    weight: 1
+    taxonomies:
+      category: categories
+      tag: tags
+      series: series
+    menu:
+      main:
+        - name: Posts
+          url: posts/
+          weight: 10
+        - name: Tags
+          url: tags/
+          weight: 10
 
-paginate: 4
-env: production
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON
 
-# Hugo Configure Markup
-# More info: https://gohugo.io/getting-started/configuration-markup#
+params:
+  env: production
+  description: "a blog about the random tech things I do at home"
+  author: Kyle Wilson
+
+  defaultTheme: auto
+  ShowShareButtons: false
+  ShowReadingTime: true
+  displayFullLangName: true
+  ShowPostNavLinks: true
+  ShowBreadCrumbs: true
+  ShowCodeCopyButtons: true
+  ShowRssButtonInSectionTermList: true
+  ShowToc: true
+  images: []
+
+  profileMode:
+    enabled: false
+
+  homeInfoParams:
+    Title: "Kyle Wilson"
+    Content: >
+      Welcome to my blog. I do a lot of homelab things with raspberry pis.
+
+  socialIcons:
+    - name: github
+      url: "https://github.com/kdwils"
+    - name: Rss
+      url: "index.xml"
+    - name: linkedin
+      url: "https://www.linkedin.com/in/kyle-wilson-/"
+
+  editPost:
+    URL: "https://github.com/kdwils/blog/tree/main/content/"
+    Text: "Suggest Changes"
+    appendFilePath: true
+
+  assets:
+    disableHLJS: false
+
 markup:
-  highlight:
-    guessSyntax: true
-    style: friendly
-  tableOfContents:
-    endLevel: 3
-    ordered: false
-    startLevel: 2
-  # needed to render raw HTML (e.g. <sub>, <sup>, <kbd>, <mark>)
   goldmark:
     renderer:
       unsafe: true
+  highlight:
+    noClasses: false
+    anchorLineNos: true
+    codeFences: true
+    guessSyntax: false
+    # lineNos: true
+    style: monokai-sublime
 
-# Social links in footer, support github,twitter,stackoverflow,facebook
-social:
-  github: https://github.com/kdwils
+privacy:
+  vimeo:
+    disabled: true
+    simple: true
 
-# Site parameters
-params:
-  # Site Author
-  author: Kyle Wilson
-  # Author biography
-  bio: big software guy
-  # Site Description, used in HTML meat
-  description: A blog about the tech things i'm doing and other personal life matters
+  twitter:
+    disabled: true
+    enableDNT: true
+    simple: true
 
-  ###########################################
-  # Optional Configuration
-  ###########################################
+  instagram:
+    disabled: true
+    simple: true
 
-  # To enable RSS, you could set `enableRSS: true`, default is `true`
-  enableRSS: true
-  # To enable comments, you may need to set `disqusShortname`
-  enableComments: false
-  # To enable comments, you may need to set `googleAnalytics`
-  enableGoogleAnalytics: true
-  # To enable table of content, you could set `showToc: true`, default is `false`
-  showToc: true
-  # To hidden powerBy message in the page footer, you could set: `showPowerBy: false`, default is `true`
-  showPowerBy: true
-  # To enable math typesetting , you could set `math: true`, default is `false`
-  math: false
-  # To hidden post summary in home page, you could set `hiddenPostSummaryInHomePage: true`, default is `false`
-  hiddenPostSummaryInHomePage: false
-  # Website copy write, default: '© Copyright 2021 ❤️ {params.author}'
-  copyright: ""
+  youtube:
+    disabled: true
+    privacyEnhanced: true
+
+services:
+  instagram:
+    disableInlineCSS: true
+  twitter:
+    disableInlineCSS: true

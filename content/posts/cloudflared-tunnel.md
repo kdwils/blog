@@ -28,33 +28,33 @@ I chose to install the cloudflared cli following these [instructions](https://de
 ## Obtaining a certificate
 To get a certificate, log in using the cloudflared cli.
 
-{{< highlight bash >}}
+```shell
 cloudflared tunnel login
-{{< /highlight >}}
+```
 
 Next, create a secret from the certificate we were just issued.
 
-{{< highlight bash >}}
+```shell
 $ kubectl create secret -n cloudflared generic tunnel-cert --from-file=/path/to/cert.pem
-{{< /highlight >}}
+```
 
 All done, next step.
 
 ## Creating the tunnel & obtaining tunnel credentials
 Create your tunnel.
-
-{{< highlight bash >}}
+```shell
 $ cloudflared tunnel create my-home-tunnel
+```
 
 Tunnel credentials written to /Users/<your-user>/.cloudflared/<your-tunnel-id>.json. cloudflared chose this file based on where your origin certificate was found. Keep this file secret. To revoke these credentials, delete the tunnel.
 
 Created tunnel my-home-tunnel with id <your-tunnel-id>
-{{< /highlight >}}
 
 Now we can store our credentials as a kubernetes secret
-{{< highlight bash >}}
+
+```shell
 $ kubectl create secret generic tunnel-credentials --from-file=homelab.json=/Users/<your-user>/.cloudflared/<your-tunnel-id>.json
-{{< /highlight >}}
+```
 
 
 ## Associating your tunnel to a DNS record
@@ -62,9 +62,9 @@ The cloudflared cli makes this easy to do.
 
 For example, my command looked similar to this to tie my tunnel to `blog.kyledev.co`.
 
-{{< highlight bash >}}
+```shell
 $ cloudflared tunnel route dns my-home-tunnel blog.kyledev.co
-{{< /highlight >}}
+```
 
 This should create a CNAME record for you.
 
@@ -73,7 +73,7 @@ This should create a CNAME record for you.
 ## Deploying cloudflared to the cluster
 Before we deploy cloudflared, we need to create a configmap for the deployment to use
 
-{{< highlight yaml >}}
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -90,20 +90,20 @@ data:
         service: http://blog.blog.svc.cluster.local:80
       - service: http_status:404
     protocol: http2
-{{< /highlight >}}
+```
 
 My blog lives in a different namespace than the cloudflare deployment, but we can still access it at `http://blog.blog.svc.cluster.local:80`.
 
-{{< highlight bash >}}
+```shell
 $ k get svc -n blog
 NAME   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
 blog   ClusterIP   10.43.81.250   <none>        80/TCP    7d1h
-{{< /highlight >}}
+```
 
 Here is the full yaml for the deployment. Take note we need to mount the `tunnel-cert` and `tunnel-credentials` to the container.
 
 {{< details "cloudflared.yaml" >}}
-{{< highlight yaml >}}
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -174,31 +174,27 @@ data:
         service: http://blog.blog.svc.cluster.local:80
       - service: http_status:404
     protocol: http2
-{{< /highlight >}}
+```
 {{< /details >}}
 
-{{< highlight bash >}}
+```shell
 $ kubectl apply -f cloudflared.yaml
-{{< /highlight >}}
+```
 
 Check out the deployment, mine has been running for a few days.
 
-{{< highlight bash >}}
+```shell
 $ k get pods -n cloudflared
 NAME                          READY   STATUS    RESTARTS   AGE
 cloudflared-7b99d68b4-v6vfj   1/1     Running   0          3d2h
-{{< /highlight >}}
+```
 
 At this point, I could reach my blog externally from my local network without having to port forward. Pretty cool stuff.
 
 I only wanted to expose my blog and only services selectively, but you could always wildcard an ingress entry to point to your ingress-controller, allowing you to expose all services running in your cluster.
 
-{{< highlight yaml >}}
+```yaml
 ingress:
   - hostname: *.kyledev.co
     service: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local:443
-{{< /highlight >}}
-
-
-# What's next?
-How I set up CI/CD flows using github actions and tailscale to update deployments in my homelab, check out the [post](/posts/setting-up-ingress-nginx-controller-and-cert-manager/).
+```

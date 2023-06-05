@@ -29,7 +29,7 @@ The workflow I am going to build out is available on my [github repo](https://gi
 When creating a workflow, users can provide inputs to the flow assuming you've defined what inputs are available.
 
 {{< details "I need to know the image name, the registry, and a few optional fields" >}}
-{{< highlight yaml >}}
+```yaml
 name: build push sign
 on:
   workflow_call:
@@ -50,14 +50,14 @@ on:
         default: linux/amd64,linux/arm64,linux/arm
 env:
   IMAGE_PATH: ${{ inputs.registry }}/${{ inputs.image }}
-{{< /highlight >}}
+```
 {{< /details >}}
 
 ### Logging into a registry
 The docker login action allows you to log into a registry for pushing an image. You can use any registry that you would like.
 
 {{< details "I chose to use github's container registry" >}}
-{{< highlight yaml >}}
+```yaml
 - name: log in to ghcr
   uses: docker/login-action@v2
   if: github.event_name != 'pull_request'
@@ -65,7 +65,7 @@ The docker login action allows you to log into a registry for pushing an image. 
     registry: ${{ inputs.registry }}
     username: ${{ github.REPOSITORY_OWNER }}
     password: ${{ secrets.GITHUB_TOKEN }}
-{{< /highlight >}}
+```
 {{< /details >}}
 
 ### Docker
@@ -80,7 +80,7 @@ Docker has some cool github actions for images:
 * [build-push-action](https://github.com/docker/build-push-action) can build and push your image to the registry you logged into earlier. You can also input tags and labels from the metadata-action.
 
 {{< details "I use all of these actions in my workflow." >}}
-{{< highlight yaml >}}
+```yaml
 - name: Docker metadata
 id: meta
 uses: docker/metadata-action@v4
@@ -112,14 +112,14 @@ with:
     labels: ${{ steps.meta.outputs.labels }}
     cache-from: type=gha
     cache-to: type=gha,mode=max
-{{< /highlight >}}
+```
 {{< /details >}}
 
 ### Signing
 `Sigstore` offers a solution for signing artifacts called `cosign`. Check out their [github action](https://github.com/sigstore/cosign-installer#cosign-installer-github-action) for more details.
 
 {{< details "I am signing using my github OIDC token, but you can provide your own key as well via a secret." >}}
-{{< highlight yaml >}}
+```yaml
 - name: Install Cosign
   uses: sigstore/cosign-installer@main
 
@@ -127,7 +127,7 @@ with:
   run: cosign sign --yes ${TAGS}
   env:
     TAGS: ${{ steps.meta.outputs.tags }}
-{{< /highlight >}}
+```
 {{< /details >}}
 
 
@@ -136,7 +136,7 @@ with:
 You'll need to create a `.github/workflows` folder and create yaml file for the flow, such as `ci.yaml`. Then you can point to the workflow so long as it is in a public repository.
 
 {{< details "For example, here is the [yaml](https://github.com/kdwils/blog/blob/main/.github/workflows/ci.yaml) this blog uses for CI." >}}
-{{< highlight yaml >}}
+```yaml
 name: Build Push Sign
 on:
   push:
@@ -150,7 +150,7 @@ jobs:
       registry: ghcr.io
       environment: Homelab
       platforms: linux/amd64,linux/arm64
-{{< /highlight >}}
+```
 {{< /details >}}
 
 
@@ -167,7 +167,7 @@ Because `ArgoCD` is deployed in my `k3s` cluster, we can point the destination s
 The manifests for this blog live at `https://github.com/kdwils/blog/tree/main/deploy/homelab` so I need to tell ArgoCD to look at the `/deploy/homelab` overlay.
 
 {{< details "Heres the full Application for this blog." >}}
-{{< highlight yaml >}}
+```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -187,7 +187,7 @@ spec:
     automated:
       prune: true
       selfHeal: true
-{{< /highlight >}}
+```
 {{< /details >}}
 
 ### Organizing Applications
@@ -204,11 +204,11 @@ This did feel like a bit of a pain to set up initially. You can see my configura
 
 By adding these annotations for my blog `Application`, the image-updater will sync the latest image to my cluster.
 
-{{< highlight yaml >}}
+```yaml
 annotations:
   argocd-image-updater.argoproj.io/image-list: blog=ghcr.io/kdwils/blog
   argocd-image-updater.argoproj.io/blog.platforms: linux/arm64,linux/amd64
   argocd-image-updater.argoproj.io/blog.update-strategy: latest
-{{< /highlight >}}
+```
 
 This seems to work pretty well, however I believe I need to configure credentials for each registry. It seems you can also have the updater commit a new image sha to your repositories as well so long as you're using `helm` or `kustomize` which would eliminte the need to constantly poll the registries.

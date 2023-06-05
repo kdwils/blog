@@ -2,7 +2,7 @@
 author = "Kyle Wilson"
 title = "Loadbalancing with Metallb on my bare-metal cluster"
 date = "2023-02-15"
-description = "Metallb "
+description = "Metallb"
 summary = "Metallb in k3s RPIs kubernetes cluster. Testing the metallb installation by deploying pihole. Using pihole ad blocking for the entire tailnet."
 tags = [
     "metallb",
@@ -25,13 +25,13 @@ In short, it allows you to create Kubernetes services of type `LoadBalancer` in 
 
 Head over to the installation [docs](https://metallb.universe.tf/installation/). I personally chose to install by manifest, which creates a `metallb-system` namespace for us.
 
-{{< highlight bash >}}
+```shell
 $ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
-{{< /highlight >}}
+```
 
 Metallb runs as a daemonset, creating a pod that runs on each node known as `speaker`, in addition to a controller. The controller will handle assinging IPs to services, while each speaker will advertise services with assigned IPs using the strategy configured. I currently have 3 nodes in my cluster there are 3 speakers total.
 
-{{< highlight bash >}}
+```shell
 $ kubectl get daemonset -n metallb-system
 NAME      DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
 speaker   3         3         3       3            3           kubernetes.io/os=linux   5h30m
@@ -42,15 +42,13 @@ controller-84d6d4db45-zvd2d   1/1     Running   0               5h22m
 speaker-xmngr                 1/1     Running   0               5h22m
 speaker-sqrsq                 1/1     Running   0               5h22m
 speaker-gf2cm                 1/1     Running   0               5h22m
-{{< /highlight >}}
+```
 
 ### Configuration
 
 We need to tell metallb what ip pool it has to pick from. You can use `10.0.1.0/24` syntax here or a range such as `10.0.0.0-10.0.0.100`. To do this, we create an `IPAddressPool`.
 
-{{< highlight yaml >}}
-$ cat ip-address-pool.yaml
-
+```yaml
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
@@ -59,13 +57,11 @@ metadata:
 spec:
   addresses:
     - 10.0.1.0/24
-{{< /highlight >}}
+```
 
 Next, we tell metallb how we want to advertise our services.
 
-{{< highlight yaml >}}
-$ cat advertisement.yaml
-
+```yaml
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
@@ -74,7 +70,7 @@ metadata:
 spec:
   ipAddressPools:
     - load-balancer
-{{< /highlight >}}
+```
 
 Run a `kubectl apply` to your metallb namespace for your address pool and advertisement configs.
 
@@ -91,9 +87,9 @@ I am advertising the `10.0.1.0/24` CIDR for my subnet router. This means we will
 > **_NOTE:_**  The ip range that you gave metallb to use need to fall under the CIDR for your subrouter. If you're unsure, check out https://www.ipaddressguide.com/ to verify your ip range is correct.
 
 We'll need to choose a machine to act as our subnet router and rerun tailscale up advertising the routes we want to expose to the tailnet.
-{{< highlight bash >}}
+```shell
 sudo tailscale up --advertise-routes=10.0.1.0/24
-{{< /highlight >}}
+```
 
 ## Approving our Subnet Router
 Once you've ran some flavor of `sudo tailscale up`, navigate over to your tailnet [admin console](https://login.tailscale.com/admin/machines).
@@ -119,14 +115,14 @@ Pi-hole is a general purpose network-wide ad-blocker that protects your network 
 Check out these [helm charts](https://github.com/MoJo2600/pihole-kubernetes) for setting up your deployment.
 
 Lets create a namespace for pihole to live in.
-{{< highlight bash >}}
+```shell
 $ kubectl create namespace pihole
-{{< /highlight >}}
+```
 
 First, we need to set up some persistance for our pihole deployment. This step is really optional if you don't plan to run pihole in your cluster long term. I specifically set up the `PersistentVolume` on my `nuc` machine since that node has extra storage to go around.
 
 {{< details "PiHole Storage YAML" >}}
-{{< highlight yaml >}}
+```yaml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -167,7 +163,7 @@ spec:
     matchLabels:
       pv: pihole
   storageClassName: local-storage
-{{< /highlight >}}
+```
 {{< /details >}}
 
 Next, let's take a look at the services we are going to deploy.
@@ -181,7 +177,7 @@ Because `homelab-pihole-dns-tcp` listens on **TCP** and `homelab-pihole-dns-udp`
 The annotation `metallb.universe.tf/allow-shared-ip` tells metallb to allow this. Each service that will be sharing an IP is required to have the annotation.
 
 {{< details "PiHole Services YAML" >}}
-{{< highlight yaml >}}
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -247,14 +243,14 @@ spec:
   selector:
     app: pihole
     release: homelab
-{{< /highlight >}}
+```
 {{< /details >}}
 
 
 Here is the full yaml I am using. You can leave out the custom dnsmaq config map and remove the volume from the deployment. We will be covering those in a later post.
 
 {{< details "Full PiHole Kubernetes YAML" >}}
-{{< highlight yaml >}}
+```yaml
 apiVersion: v1
 kind: Secret
 metadata:
@@ -470,33 +466,33 @@ spec:
           defaultMode: 420
           name: homelab-pihole-custom-dnsmasq
         name: custom-dnsmasq
-{{< /highlight >}}
+```
 {{< /details >}}
 
 You can check that your services got created. Note the external-ips that got assigned to our services. The dns services should be sharing whatever ip you gave them, and the pihole-web service should have its own ip.
 
-{{< highlight bash >}}
+```shell
 $ kubectl get svc -n pihole
 NAME                     TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
 homelab-pihole-dns-tcp   LoadBalancer   10.43.75.7      10.0.1.70     53:32441/TCP                 20h
 homelab-pihole-dns-udp   LoadBalancer   10.43.242.253   10.0.1.70     53:30206/UDP                 20h
 homelab-pihole-web       LoadBalancer   10.43.123.96    10.0.1.71     80:31059/TCP,443:31284/TCP   20h
-{{< /highlight >}}
+```
 
 And the pihole pod running
 
-{{< highlight bash >}}
+```shell
 $ kubectl get pods -n pihole
 NAME                             READY   STATUS    RESTARTS   AGE
 homelab-pihole-989bd4c59-k9gd7   1/1     Running   0          19h
-{{< /highlight >}}
+```
 
 ---
 ## Validation
 
 From my local laptop that is connected to the tailnet, I should be able to use the dns services to lookup domain names. We can use `dig` to test this out. If you're on windows, you can use `nslookup` instead.
 
-{{< highlight bash >}}
+```shell
 $ dig @10.0.1.70 google.com
 
 ; <<>> DiG 9.10.6 <<>> @10.0.1.70 google.com
@@ -523,7 +519,7 @@ google.com.		150	IN	A	142.250.123.113
 ;; SERVER: 10.0.1.70#53(10.0.1.70)
 ;; WHEN: Thu Feb 16 10:51:32 EST 2023
 ;; MSG SIZE  rcvd: 135
-{{< /highlight >}}
+```
 
 
 You can also navigate to the pihole dashboard from your browser
@@ -542,5 +538,3 @@ Enable local DNS override.
 Now any device on your tailnet gets the benefit of pihole adblocking while connected.
 
 > **_NOTE:_** If your pihole services are down you are going to run into trouble with DNS lookups. You may want to consider a backup here or make sure your pihole services are highly available.
-# What's Next?
-Check out my next [post](/posts/deploying-applications-to-my-cluster-using-github-actions-and-argocd) on how to set up `ingress-nginx-controller` to access your services using pihole as a dns server with `cert-manager` to manage them certs.

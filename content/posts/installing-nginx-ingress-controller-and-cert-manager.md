@@ -23,16 +23,16 @@ We want to create a wildcard certificate for our cluster, and have that secret r
 
 ### Installation
 
-{{< highlight bash >}}
+```shell
 $ kubectl -n kube-system apply -f https://github.com/emberstack/kubernetes-reflector/releases/latest/download/reflector.yaml
 
 serviceaccount/reflector created
 clusterrole.rbac.authorization.k8s.io/reflector created
 clusterrolebinding.rbac.authorization.k8s.io/reflector created
 deployment.apps/reflector created
-{{< /highlight >}}
+```
 
-{{< highlight bash >}}
+```shell
 $ kubectl get pods -n kube-system
 
 NAME                                        READY   STATUS    RESTARTS   AGE
@@ -40,7 +40,7 @@ local-path-provisioner-79f67d76f8-6jh6f     1/1     Running   0          5d23h
 coredns-597584b69b-69tdx                    1/1     Running   0          5d23h
 metrics-server-5f9f776df5-cdm9t             1/1     Running   0          5d23h
 reflector-5c99b9b7c9-tbdbn                  1/1     Running   0          6m27s
-{{< /highlight >}}
+```
 
 Looks good to go.
 
@@ -53,20 +53,20 @@ Cert-manager adds certificates and certificate issuers as resource types in Kube
 
 I'll be installing cert-manager using a manifest, but feel free to follow the [docs](https://cert-manager.io/docs/installation/) for other options such as helm.
 
-{{< highlight bash >}}
+```shell
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
-{{< /highlight >}}
+```
 
 Verify the installation. I've had cert-manager installed for a few days now.
 
-{{< highlight bash >}}
+```shell
 $ kubectl get pods -n cert-manager
 
 NAME                                      READY   STATUS    RESTARTS   AGE
 cert-manager-cainjector-ffb4747bb-g5jqp   1/1     Running   0          5d21h
 cert-manager-webhook-545bd5d7d8-tzhzd     1/1     Running   0          5d21h
 cert-manager-7dfffc7574-hdcqs             1/1     Running   0          4d23h
-{{< /highlight >}}
+```
 
 ### LetsEncrypt Challenges
 
@@ -89,9 +89,8 @@ LetsEncrypt has a list of supported [providers](https://cert-manager.io/docs/con
 We'll be following the [docs](https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/) for using cloudflare.
 
 First, we need to create a secret for our cloudflare API token.
-{{< highlight yaml >}}
-$ cat cloudflare-api-token-secret.yaml
 
+```yaml
 apiVersion: v1
 kind: Secret
 metadata:
@@ -100,15 +99,14 @@ metadata:
 type: Opaque
 stringData:
   api-token: <your-api-token>
-{{< /highlight >}}
+```
 
 Next, we'll need to create a `ClusterIssuer` to handle issuing certificates. We've configured our issuer to use DNS-01 with cloudflare as our provider, referencing the cloudflare token secret we created a few moments ago.
 
 LetsEncrypt has a staging API we can use for testing our cluster issuer setup. We'll create a staging issuer first to test our configurations.
 
-{{< highlight yaml >}}
-$ cat cluster-issuer-staging.yaml
 
+```yaml
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -126,30 +124,28 @@ spec:
             apiTokenSecretRef:
               name: cloudflare-api-token-secret
               key: api-token
-{{< /highlight >}}
-
+```
 Verify your ClusterIssuer is ready to go.
-
-{{< highlight bash >}}
+```shell
 $ kubectl get clusterissuer -n cert-manager
 
 NAME                  READY   AGE
 letsencrypt-staging   True    5d21h
-{{< /highlight >}}
+```
 
 I want the certificate secret to be created in the namespace `go-hello`, so go ahead and create that namespace now if you're following along.
 
-{{< highlight bash >}}
+```shell
 $ kubectl create namespace go-hello
 
 namespace/go-hello created
-{{< /highlight >}}
 
+```
 Next, the wildcard certificate.
 
 We need to tell `reflector` which namespaces to replicate the tls secret to. Check out the `secretTemplate` in our certificate.
 
-{{< highlight yaml >}}
+```yaml
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -169,11 +165,11 @@ spec:
   dnsNames:
     - "*.kyledev.co"
     - "*.int.kyledev.co"
-{{< /highlight >}}
 
+```
 Wait for your certificate to become ready. `Reflector` should create the certificate secret in our `go-hello` namespace automatically.
 
-{{< highlight bash >}}
+```shell
 $ kubectl get cert -n cert-manager
 NAME                           READY   SECRET                         AGE
 wildcard-kyledev-tls-staging   True    wildcard-kyledev-tls-staging   15s
@@ -181,7 +177,7 @@ wildcard-kyledev-tls-staging   True    wildcard-kyledev-tls-staging   15s
 $ kubectl get secret -n go-hello
 NAME                           TYPE                DATA   AGE
 wildcard-kyledev-tls-staging   kubernetes.io/tls   2      36s
-{{< /highlight >}}
+```
 
 
 ## Ingress-nginx
@@ -198,13 +194,13 @@ Assuming you've set up loadbalancing, such as metallb, we'll be going with the c
 
 Check out how to [install metallb](/posts/installing-metallb-on-k3s-rpi-cluster-with-tailscale/) if you're interested.
 
-{{< highlight bash >}}
+```shell
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.6.4/deploy/static/provider/cloud/deploy.yaml
-{{< /highlight >}}
+```
 
 
 Verify the ingress controller is up and running
-{{< highlight bash >}}
+```shell
 $ kubectl get pods -n ingress-nginx
 NAME                                        READY   STATUS      RESTARTS   AGE
 ingress-nginx-admission-patch-hmf9z         0/1     Completed   0          4d22h
@@ -215,7 +211,7 @@ $ kubectl get svc -n ingress-nginx
 NAME                                 TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
 ingress-nginx-controller             LoadBalancer   10.43.142.121   10.0.1.0      80:32628/TCP,443:32568/TCP   4d22h
 ingress-nginx-controller-admission   ClusterIP      10.43.85.161    <none>        443/TCP                      4d22h
-{{< /highlight >}}
+```
 
 Notice how metallb assigned an external-ip `10.0.1.0` to the ingress controller. Remember this guy for later.
 
@@ -229,7 +225,7 @@ We're going to be updating our pihole deployment for local dns lookups with our 
 
 Let's update our custom dnsmasq for pihole to point `int.kyledev.co` to our new ingress-nginx-controller external-ip of `10.0.1.0`.
 
-{{< highlight yaml >}}
+```yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -245,11 +241,11 @@ data:
     address=/int.kyledev.co/10.0.1.0
   addn-hosts: |
   05-pihole-custom-cname.conf: |
-{{< /highlight >}}
+```
 
 Delete the running pihole pod so it picks up the new config map changes.
 
-{{< highlight bash >}}
+```shell
 $ kubectl get pods -n pihole
 NAME                             READY   STATUS    RESTARTS   AGE
 homelab-pihole-989bd4c59-vf9kb   1/1     Running   0          2d19h
@@ -260,7 +256,7 @@ pod "homelab-pihole-989bd4c59-vf9kb" deleted
 $ kubectl get pods -n pihole
 NAME                             READY   STATUS    RESTARTS   AGE
 homelab-pihole-989bd4c59-jjdcj   0/1     Running   0          9s
-{{< /highlight >}}
+```
 
 ## Testing it all out
 
@@ -273,7 +269,7 @@ First, lets note the annotations on the Ingress.
 `kubernetes.io/ingress.class: nginx` tells our `ingress-nginx-controller` it will be managing this ingress.
 
 Additionally, we're pointing to our wildcard staging certificate `wildcard-kyledev-tls-staging`
-{{< highlight yaml >}}
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -298,12 +294,12 @@ spec:
   - hosts:
     - go-hello.int.kyledev.co
     secretName: wildcard-kyledev-tls-staging
-{{< /highlight >}}
+```
 
 Heres the full kubernetes yaml for the deployment, including the ingress.
 
 {{< details "Hello World YAML" >}}
-{{< highlight yaml >}}
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -367,12 +363,12 @@ spec:
   - hosts:
     - go-hello.int.kyledev.co
     secretName: wildcard-kyledev-tls-staging
-{{< /highlight >}}
+```
 {{< /details >}}
 
 Deploy the hello world service to your cluster.
 
-{{< highlight bash >}}
+```shell
 $ kubectl apply -f hello-world.yaml
 
 service/go-hello created
@@ -383,16 +379,16 @@ $ kubectl get pods -n go-hello
 
 NAME                        READY   STATUS    RESTARTS   AGE
 go-hello-654db7765c-jsx7s   1/1     Running   0          3m27s
-{{< /highlight >}}
+```
 
 Check out the ingress as well. Notice how the address is the same as our ingress-nginx-controller load balancer.
 
-{{< highlight bash >}}
+```bash
 $ kubectl get ingress -n go-hello
 
 NAME       CLASS    HOSTS                     ADDRESS    PORTS     AGE
 go-hello   <none>   go-hello.int.kyledev.co   10.0.1.0   80, 443   3m51s
-{{< /highlight >}}
+```
 
 And we can head over to `go-hello.int.kyledev.co` to verify everything is working.
 
@@ -403,7 +399,7 @@ But theres a problem...https isn't working? That's because we're using the stagi
 ## LetsEncrypt prod issuer
 Lets set up our prod issuer since we can see that our staging issuer is working as intended.
 
-{{< highlight yaml >}}
+```yaml
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -421,11 +417,11 @@ spec:
             apiTokenSecretRef:
               name: cloudflare-api-token-secret
               key: api-token
-{{< /highlight >}}
+```
 
 Followed by our prod wildcard certificate.
 
-{{< highlight yaml >}}
+```yaml
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -445,11 +441,11 @@ spec:
   dnsNames:
     - "*.kyledev.co"
     - "*.int.kyledev.co"
-{{< /highlight >}}
+```
 
 Our updated ingress will look largely the same, however we'll point to our new prod `ClusterIssuer` with the annotation `cert-manager.io/cluster-issuer: letsencrypt-prod`. Additionally, we need to point to he new tls secret `wildcard-kyledev-tls-prod`.
 
-{{< highlight yaml >}}
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -474,12 +470,8 @@ spec:
   - hosts:
     - go-hello.int.kyledev.co
     secretName: wildcard-kyledev-tls-prod
-{{< /highlight >}}
+```
 
 And it should magically work!
 
 ![secure](/images/nginx-ingress/prod-cert.png)
-
-# Whats Next?
-
-Interested in how I deploy my blog? Take a peek at how I used a [cloudflare tunnel](/posts/exposing-services-in-my-cluster-using-cloudflare-tunnels/).

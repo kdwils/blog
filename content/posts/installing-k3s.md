@@ -24,22 +24,26 @@ SSH onto whatever node you want to be your master node.
 First, lets create an optional configuration file for k3s to use prior to installation. 
 
 This file should live at `/etc/rancher/k3s/config.yaml`. In my setup, I want to use my tailscale ip so the nodes will communicate via the `tailnet`. This step can be skipped if your set up differs.
-{{< highlight yaml >}}#/etc/rancher/k3s/config.yaml
+```yaml
+#/etc/rancher/k3s/config.yaml
 node-ip: "100.72.32.68"
 bind-address: "100.72.32.68"
-{{< /highlight >}}
+```
 
 Next, we can install k3s. 
 
 For some reason, the install script did not respect disabling traefik and servicelb for my installation via the config file, so I had to do it the command. We want to disable traefik as we will be using nginx ingress controller instead. We will also be using metallb in place of servicelb.
 
-{{< highlight bash >}}pi@master-1:~ $ curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_EXEC="--disable traefik --disable servicelb" sh -s -
-{{< /highlight >}}
+```shell
+pi@master-1:~ $ curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_EXEC="--disable traefik --disable servicelb" sh -s -
+```
 
 Once the k3s agent has started, we need to grab a few things to use later.
 
 ### Getting a kubeconfig
-{{< highlight bash >}}pi@master-1:~ $ sudo cat /etc/rancher/k3s/k3s.yaml {{< /highlight >}}
+```shell
+pi@master-1:~ $ sudo cat /etc/rancher/k3s/k3s.yaml
+```
 
 Lets update a few fields on the kubeconfig.
 
@@ -52,7 +56,7 @@ If you did set the `node-ip` in the k3s configuration you should not have to upd
 Additionally, you can change the name of the cluster to whatever you wish so you can use the context like `kubectl config use-context pi` in case you have multiple contexts.
 
 Example of a kubeconfig using my `tailnet` ip for the raspberry pi and a cluster context of `pi`.
-{{< highlight yaml >}}
+```yaml
 apiVersion: v1
 clusters:
 - cluster:
@@ -71,14 +75,16 @@ users:
 - name: default
   user:
     client-certificate-data: <client-certificate-data>
-{{< /highlight >}}
+```
 
 ### Finding your k3s join token
+This is an old token and no longer in use, but the format of your token should be similar
 
-{{< highlight bash >}}pi@master-1:~ $ sudo cat /var/lib/rancher/k3s/server/node-token
+```shell
+pi@master-1:~ $ sudo cat /var/lib/rancher/k3s/server/node-token
 
 K102fae30b4061e16a93b6dd2792f4deb7ff811bc61d52d1575c6bd4f1de890fed7::server:10b12cfbf8cabf9af720aba5d0722d26
-{{< /highlight >}}
+```
 
 ### Joining Worker Nodes to the cluster
 
@@ -91,19 +97,17 @@ For me, this will once again be the tailscale ip.
 
 `K3S_URL=https://100.72.32.68:6443`
 
-{{< highlight bash >}}pi@worker-1:~ $  curl -sfL https://get.k3s.io | K3S_URL=https://100.72.32.68:6443 K3S_TOKEN=K102fae30b4061e16a93b6dd2792f4deb7ff811bc61d52d1575c61drf1de890fed7::server:10b12cfbf8cabf9af720aba556722d26 sh -
-{{< /highlight >}}
+```shell
+pi@worker-1:~ $  curl -sfL https://get.k3s.io | K3S_URL=https://100.72.32.68:6443 K3S_TOKEN=K102fae30b4061e16a93b6dd2792f4deb7ff811bc61d52d1575c61drf1de890fed7::server:10b12cfbf8cabf9af720aba556722d26 sh -
+```
 
 You can verify your nodes are connected with the kubeconfig we got earlier.
 
-{{< highlight bash >}}$ kubectl get nodes
+```shell
+$ kubectl get nodes
 NAME       STATUS   ROLES                  AGE     VERSION
 master-1   Ready    control-plane,master   26h     v1.25.6+k3s1
 worker-1   Ready    <none>                 26h     v1.25.6+k3s1
-{{< /highlight >}}
+```
 
-Rinse and repeat for each node you wish to add to your cluster.
-
-# Whats Next?
-
-Check out how to [install metallb](/posts/installing-metallb-on-k3s-rpi-cluster-with-tailscale/) and advertise external-ips for your bare-metal cluster.
+Rinse and repeat for each node you wish to add to your cluster
