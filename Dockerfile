@@ -1,4 +1,4 @@
-FROM alpine:latest as builder
+FROM nginx:alpine
 
 RUN apk add hugo
 
@@ -7,10 +7,8 @@ COPY . .
 ENV HUGO_ENV production
 RUN hugo
 
-FROM nginx:alpine
-
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /src/public /usr/share/nginx/html
+COPY /src/public /usr/share/nginx/html
 
 EXPOSE 8080
 
