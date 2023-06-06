@@ -12,6 +12,7 @@ FROM nginx:alpine
 USER root
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf 
 COPY --from=builder /src/public /var/www/html
 
 EXPOSE 8080
