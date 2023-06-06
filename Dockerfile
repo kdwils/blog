@@ -7,11 +7,9 @@ COPY . .
 ENV HUGO_ENV production
 RUN hugo
 
-FROM nginx:alpine
-
-RUN chown nginx:nginx /usr/share/nginx/*
+FROM imacatlol/hugo-nginx
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /src/public /usr/share/nginx/blog
+COPY --from=builder /src/public /usr/share/nginx/html
 
 EXPOSE 8080
