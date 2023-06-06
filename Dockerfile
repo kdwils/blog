@@ -1,14 +1,16 @@
 FROM nginx:alpine
 
+WORKDIR /src
+
 RUN apk add hugo
 
-WORKDIR /src
 COPY . .
+
 ENV HUGO_ENV production
 RUN hugo
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY /src/public /usr/share/nginx/html
+COPY ./public /usr/share/nginx/html
 
 EXPOSE 8080
 
