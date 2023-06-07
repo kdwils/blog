@@ -119,53 +119,6 @@ Lets create a namespace for pihole to live in.
 $ kubectl create namespace pihole
 ```
 
-First, we need to set up some persistance for our pihole deployment. This step is really optional if you don't plan to run pihole in your cluster long term. I specifically set up the `PersistentVolume` on my `nuc` machine since that node has extra storage to go around.
-
-{{< details "PiHole Storage YAML" >}}
-```yaml
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: pihole
-  labels:
-    pv: pihole
-spec:
-  capacity:
-    storage: 500Mi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
-  local:
-    path: /pihole
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: kubernetes.io/hostname
-              operator: In
-              values:
-                - nuc
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: pihole
-  namespace: pihole
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 500Mi
-  selector:
-    matchLabels:
-      pv: pihole
-  storageClassName: local-storage
-```
-{{< /details >}}
-
 Next, let's take a look at the services we are going to deploy.
 
 Pihole `homelab-pihole-dns-tcp` and `homelab-pihole-dns-udp` will be the services used for dns lookups.

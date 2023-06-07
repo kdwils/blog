@@ -191,7 +191,7 @@ cloudflared-7b99d68b4-v6vfj   1/1     Running   0          3d2h
 
 At this point, I could reach my blog externally from my local network without having to port forward. Pretty cool stuff.
 
-I only wanted to expose my blog and only services selectively, but you could always wildcard an ingress entry to point to your ingress-controller, allowing you to expose all services running in your cluster.
+I only wanted to expose my blog and other services selectively, but I believe you could always wildcard an ingress entry to point to your ingress controller, allowing you to expose all services running in your cluster.
 
 ```yaml
 ingress:
