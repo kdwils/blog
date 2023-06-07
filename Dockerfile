@@ -7,17 +7,10 @@ COPY . .
 ENV HUGO_ENV production
 RUN hugo
 
-RUN ls -l ./public
-RUN ls -l ./themes
-
 FROM nginx:alpine
 
-USER root
-
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /src/public /var/www/html
-
-RUN ls -l /var/www/html
+COPY --from=builder /src/public /usr/share/nginx/html
 
 EXPOSE 8080
 
