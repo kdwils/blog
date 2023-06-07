@@ -8,6 +8,7 @@ ENV HUGO_ENV production
 RUN hugo
 
 RUN ls -l ./public
+RUN ls -l ./themes
 
 FROM nginx:alpine
 
