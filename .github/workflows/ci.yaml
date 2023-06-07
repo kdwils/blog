@@ -11,3 +11,4 @@ jobs:
       registry: ghcr.io
       environment: Homelab
       platforms: linux/amd64,linux/arm64
+      submodules: true
