@@ -94,6 +94,9 @@ data:
 
 My blog lives in a different namespace than the cloudflare deployment, but we can still access it at `http://blog.blog.svc.cluster.local:80`.
 
+
+If you want to store your cloudflare manifests in git, I recommend using something like sealedsecrets or doppler to mount your configmap to your pod as a secret instead.
+
 ```shell
 $ k get svc -n blog
 NAME   TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE

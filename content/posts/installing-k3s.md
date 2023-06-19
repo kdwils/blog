@@ -35,7 +35,7 @@ Next, we can install k3s.
 For some reason, the install script did not respect disabling traefik and servicelb for my installation via the config file, so I had to do it the command. We want to disable traefik as we will be using nginx ingress controller instead. We will also be using metallb in place of servicelb.
 
 ```shell
-pi@master-1:~ $ curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="644" INSTALL_K3S_EXEC="--disable traefik --disable servicelb" sh -s -
+pi@master-1:~ $ curl -sfL https://get.k3s.io | sh -s - server --disable=traefik --disable=servicelb --cluster-init
 ```
 
 Once the k3s agent has started, we need to grab a few things to use later.
