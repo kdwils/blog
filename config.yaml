@@ -74,6 +74,10 @@ params:
 
   assets:
     disableHLJS: false
+    favicon: "/images/favicon.icon"
+    favicon16x16: "/images/favicon-16x16.png"
+    favicon32x32: "/images/favicon-32x32.png"
+    apple_touch_icon: "/images/apple-touch-icon.png"  
 
 markup:
   goldmark:
