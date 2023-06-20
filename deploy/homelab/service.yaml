@@ -3,6 +3,9 @@ kind: Service
 metadata:
   name: blog
   namespace: blog
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: "blog"
 spec:
   selector:
     app: blog
@@ -10,3 +13,5 @@ spec:
     - port: 80
       name: http
       targetPort: 8080
+  type: LoadBalancer
+  loadBalancerClass: tailscale
