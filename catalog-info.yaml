@@ -8,5 +8,5 @@ metadata:
 spec:
   type: website
   lifecycle: production
-  owner: kyle-wilson
+  owner: kdwils
   system: homelab
