@@ -5,6 +5,9 @@ metadata:
   description: my personal blog where I write about tech things
   annotations:
     argocd/app-name: blog
+  links:
+    - url: https://blog.kyledev.co
+      title: blog
 spec:
   type: website
   lifecycle: production
