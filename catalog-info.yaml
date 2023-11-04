@@ -6,6 +6,7 @@ metadata:
   annotations:
     argocd/app-name: blog
     github.com/project-slug: kdwils/blog
+    backstage.io/kubernetes-label-selector: "app=blog"
   links:
     - url: https://blog.kyledev.co
       title: blog

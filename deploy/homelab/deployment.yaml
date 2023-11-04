@@ -9,6 +9,8 @@ spec:
       app: blog
   template:
     metadata:
+      annotations:
+        backstage.io/kubernetes-id: blog
       labels:
         app: blog
     spec:
