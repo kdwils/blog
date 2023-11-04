@@ -5,10 +5,10 @@ metadata:
   description: my personal blog where I write about tech things
   annotations:
     argocd/app-name: blog
+    github.com/project-slug: blog
   links:
     - url: https://blog.kyledev.co
       title: blog
-  github.com/project-slug: blog
 spec:
   type: website
   lifecycle: production
