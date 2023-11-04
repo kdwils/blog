@@ -8,6 +8,7 @@ metadata:
   links:
     - url: https://blog.kyledev.co
       title: blog
+  github.com/project-slug: blog
 spec:
   type: website
   lifecycle: production
