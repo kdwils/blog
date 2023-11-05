@@ -6,6 +6,7 @@ metadata:
   annotations:
     tailscale.com/expose: "true"
     tailscale.com/hostname: "blog"
+  labels:
     backstage.io/kubernetes-id: blog
 spec:
   selector:

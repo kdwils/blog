@@ -3,21 +3,22 @@ kind: Deployment
 metadata:
   name: blog
   namespace: blog
+  labels:
+    backstage.io/kubernetes-id: blog
 spec:
   selector:
     matchLabels:
       app: blog
   template:
     metadata:
-      annotations:
-        backstage.io/kubernetes-id: blog
       labels:
         app: blog
+        backstage.io/kubernetes-id: blog
     spec:
       containers:
         - name: blog
           imagePullPolicy: Always
-          image: ghcr.io/kdwils/blog:main
+          image: blog
           resources:
             limits:
               memory: "128Mi"
