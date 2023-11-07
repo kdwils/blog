@@ -3,9 +3,6 @@ kind: Service
 metadata:
   name: blog
   namespace: blog
-  annotations:
-    tailscale.com/expose: "true"
-    tailscale.com/hostname: "blog"
   labels:
     backstage.io/kubernetes-id: blog
 spec:
