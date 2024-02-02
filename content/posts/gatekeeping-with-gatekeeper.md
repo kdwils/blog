@@ -5,10 +5,10 @@ date = "2024-02-02"
 description = "Enforcing policy for kubernetes deployments with OPA Gatekeeper"
 summary = "Enforcing policy for kubernetes deployments with OPA Gatekeeper"
 tags = [
-    "kubernetes",
-    "opa",
-    "gatekeeper",
-    "policy as code"
+    "Open Policy Agent",
+    "OPA",
+    "Kubernetes",
+    "Policy as Code"
 ]
 +++
 
