@@ -295,4 +295,6 @@ metadata:
 ```
 {{< /details >}}
 
-Overall, I plan on using Gatekeeper to keep myself from applying misconfigured resources to my homelab, and exploring future solutions to handling the rego policy definitions.
+### For the future 
+
+Overall, I plan on using Gatekeeper to keep myself from applying misconfigured resources to my homelab, and exploring future solutions to handling the rego policy definitions. 
