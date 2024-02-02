@@ -20,7 +20,7 @@ OPA is a [CNCF graduated project](https://www.cncf.io/projects/open-policy-agent
 
 ## How does it work at a high level?
 
-The gatekeeping piece of gatekeeper is done through admission webhooks. When a resource is created, modified, or deleted, these actions can be validated by executing the change against an admission webhook. The webhook can then decided whether to allow, or to reject, the incoming resource.
+The gatekeeping piece of gatekeeper is done through admission webhooks. When a resource is created, modified, or deleted, these actions can be validated by executing the change against an admission webhook. The webhook can then decide whether to allow, or to reject, the incoming resource.
 
 ## Installation
 
