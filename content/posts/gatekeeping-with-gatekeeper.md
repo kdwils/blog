@@ -269,7 +269,7 @@ While the policy enforcement for gatekeeper works as expected, the way the rego 
 
 The raw rego living within the template CRD itself seems like it could become a problem. In more complex policy scenarios, I feel that the rego might get messier to work with the CRD. While I don't have any solutions for solving this, one thought I had would be to point to a remote resource that is not a CRD, but rather the rego file itself. Another solution might be some type of templating flow.
 
-One caveat I noticed with using ArgoCD to sync Gatekeeper and policy to my cluster is that the Template needs to be applied first in order to create the CRD resource your constraints. Without it, the constraint cannot be applied as the constraint points to the CRD resource.
+One caveat I noticed with using ArgoCD to sync Gatekeeper and policy to my cluster is that the Template needs to be applied first in order to create the CRD resource for your constraints. Without it, the constraint cannot be applied as the constraint points to the CRD resource.
 
 The solution here is to use sync waves with argo to first apply the template followed by the constraint. This can be achieved using the sync-wave annotation provided by ArgoCD.
 
