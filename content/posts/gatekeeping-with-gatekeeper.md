@@ -132,7 +132,7 @@ Constraints tell Gatekeeper what resources to enforce policy against. Kubernetes
 
 For our unique ingress example, our constraint looks like this:
 
-{{< details "Constraint definition for Ingress resources>}}
+{{< details "Constraint definition for Ingress resources>"}}
 ```yaml
 apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sUniqueIngressHost
