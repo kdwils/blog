@@ -14,7 +14,7 @@ tags = [
 
 ## What is Gatekeeper?
 
-[Gatekeeper](https://github.com/open-policy-agent/gatekeeper) is controller for kubernetes deployments built on top of OPA for describing and enforcing policy. See [here](https://open-policy-agent.github.io/gatekeeper/website/docs/) for more information.
+[Gatekeeper](https://github.com/open-policy-agent/gatekeeper) is a controller for kubernetes deployments built on top of OPA for describing and enforcing policy. See [here](https://open-policy-agent.github.io/gatekeeper/website/docs/) for more information.
 
 OPA is a [CNCF graduated project](https://www.cncf.io/projects/open-policy-agent-opa/) and is the policy engine I use at work. It uses a language known as rego for policy definitions.
 
