@@ -39,6 +39,7 @@ An example template I currently use in my home cluster is for blocking duplicate
 This is an example template provided by the [Gatekeeer policy library](https://github.com/open-policy-agent/gatekeeper-library/blob/master/library/general/uniqueingresshost/template.yaml).
 
 {{< details "Duplicate Hosts Template" >}}
+
 ```yaml
 apiVersion: templates.gatekeeper.sh/v1
 kind: ConstraintTemplate
@@ -104,6 +105,8 @@ In the case of checking ingress hostnames, we need to tell Gatekeeper to cache I
 
 With the resources synced into Gatekeeper, we can then run enforce policy with those resources also in consideration.
 
+
+
 {{< details "Sync configuration for Ingress resource" >}}
 ```yaml
 apiVersion: config.gatekeeper.sh/v1alpha1
@@ -132,7 +135,7 @@ Constraints tell Gatekeeper what resources to enforce policy against. Kubernetes
 
 For our unique ingress example, our constraint looks like this:
 
-{{< details "Constraint definition for Ingress resources>"}}
+{{< details "Constraint definition for Ingress resources" >}}
 ```yaml
 apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sUniqueIngressHost
