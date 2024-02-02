@@ -6,9 +6,7 @@ description = "Enforcing policy for kubernetes deployments with OPA Gatekeeper"
 summary = "Enforcing policy for kubernetes deployments with OPA Gatekeeper"
 tags = [
     "Open Policy Agent",
-    "OPA",
-    "Kubernetes",
-    "Policy as Code"
+    "Kubernetes"
 ]
 +++
 
