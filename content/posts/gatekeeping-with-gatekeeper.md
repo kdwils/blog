@@ -34,7 +34,7 @@ Templates, Constraints, and Syncs make up the core functionality for Gatekeeper.
 ### Templates
 Templates contain the logic for determining whether a manifest is violating policy. The template CRD is responsible for creating another CRD for the policy you want to enforce. Additionally, the template contains the actual rego code for the policy.
 
-An example template I currently use in my home cluster is for blocking duplicate ingress hosts. I find myself copying and pasting ingresses a lot because they don't change much between my services with the exception of the host and tls secret which can to cases where I forget to change the hostname.
+An example template I currently use in my home cluster is for blocking duplicate ingress hosts. I find myself copying and pasting ingresses a lot because they don't change much between my services with the exception of the host and tls secret. This often leads to cases where copy pasta breaks my deployment.
 
 This is an example template provided by the [Gatekeeer policy library](https://github.com/open-policy-agent/gatekeeper-library/blob/master/library/general/uniqueingresshost/template.yaml).
 
