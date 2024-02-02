@@ -13,4 +13,3 @@ spec:
       name: http
       targetPort: 8080
   type: LoadBalancer
-  loadBalancerClass: tailscale
