@@ -14,13 +14,13 @@ tags = [
 
 ## What is Gatekeeper?
 
-[Gatekeeper](https://github.com/open-policy-agent/gatekeeper) is controller for kubernetes deployments built on top of OPA for describing and enforcing policy. See [here](https://open-policy-agent.github.io/gatekeeper/website/docs/) for more information.
+[Gatekeeper](https://github.com/open-policy-agent/gatekeeper) is a controller for kubernetes deployments built on top of OPA for describing and enforcing policy. See [here](https://open-policy-agent.github.io/gatekeeper/website/docs/) for more information.
 
 OPA is a [CNCF graduated project](https://www.cncf.io/projects/open-policy-agent-opa/) and is the policy engine I use at work. It uses a language known as rego for policy definitions.
 
 ## How does it work at a high level?
 
-The gatekeeping piece of gatekeeper is done through admission webhooks. When a resource is created, modified, or deleted, these actions can be validated by executing the change against an admission webhook. The webhook can then decided whether to allow, or to reject, the incoming resource.
+The gatekeeping piece of gatekeeper is done through admission webhooks. When a resource is created, modified, or deleted, these actions can be validated by executing the change against an admission webhook. The webhook can then decide whether to allow, or to reject, the incoming resource.
 
 ## Installation
 
