@@ -38,7 +38,7 @@ outputs:
 params:
   env: production
   description: "a blog about the random tech things I do at home"
-  author: Kyle Wilson
+  author: kyle wilson
 
   defaultTheme: auto
   ShowShareButtons: false
