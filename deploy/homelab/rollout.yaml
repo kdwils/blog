@@ -7,11 +7,13 @@ spec:
   revisionHistoryLimit: 2
   selector:
     matchLabels:
-      app: rollout-bluegreen
+      app: blog
+      slot: green
   template:
     metadata:
       labels:
-        app: rollout-bluegreen
+        app: blog
+        slot: green
     spec:
       containers:
         - name: blog-rollouts-demo

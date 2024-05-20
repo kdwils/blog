@@ -19,11 +19,10 @@ kind: Service
 metadata:
   name: blog-blue
   namespace: blog
-  labels:
-    backstage.io/kubernetes-id: blog
 spec:
   selector:
     app: blog
+    slot: blue
   ports:
     - port: 80
       name: http
@@ -35,11 +34,10 @@ kind: Service
 metadata:
   name: blog-green
   namespace: blog
-  labels:
-    backstage.io/kubernetes-id: blog
 spec:
   selector:
     app: blog
+    slot: green
   ports:
     - port: 80
       name: http
