@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: rollout-bluegreen
+spec:
+  replicas: 2
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: rollout-bluegreen
+  template:
+    metadata:
+      labels:
+        app: rollout-bluegreen
+    spec:
+      containers:
+        - name: blog-rollouts-demo
+          image: ghcr.io/kdwils/blog:main
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+  strategy:
+    blueGreen:
+      activeService: blog-blue
+      previewService: blog-green
+      autoPromotionEnabled: false
+      previewReplicaCount: 1
