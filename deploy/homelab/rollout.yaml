@@ -4,7 +4,7 @@ metadata:
   name: rollout-bluegreen
   namespace: blog
 spec:
-  replicas: 2
+  replicas: 1
   revisionHistoryLimit: 1
   selector:
     matchLabels:
@@ -12,7 +12,7 @@ spec:
   strategy:
     blueGreen:
       activeService: blog
-      autoPromotionEnabled: true
+      autoPromotionEnabled: false
       previewReplicaCount: 1
       previewService: blog-preview
   template:
@@ -20,8 +20,6 @@ spec:
       labels:
         app: blog
         backstage.io/kubernetes-id: blog
-      annotations:
-        sidecar.istio.io/inject: "true"
     spec:
       containers:
         - image: ghcr.io/kdwils/blog:main
