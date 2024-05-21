@@ -17,20 +17,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: blog
-  namespace: blog
-spec:
-  selector:
-    app: blog
-  ports:
-    - port: 80
-      name: http
-      targetPort: 8080
-  type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
   name: blog-preview
   namespace: blog
 spec:
