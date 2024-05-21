@@ -8,3 +8,4 @@ resources:
   - ingress.yaml
   - gateway.yaml
   - virtualservice.yaml
+  - destinationrule.yaml
