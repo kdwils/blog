@@ -12,7 +12,7 @@ spec:
   strategy:
     blueGreen:
       activeService: blog
-      autoPromotionEnabled: false
+      autoPromotionEnabled: true
       previewReplicaCount: 1
       previewService: blog-preview
   template:
@@ -24,9 +24,9 @@ spec:
         sidecar.istio.io/inject: "true"
     spec:
       containers:
-      - image: ghcr.io/kdwils/blog:main
-        imagePullPolicy: Always
-        name: blog-rollouts-demo
-        ports:
-        - containerPort: 8080
-          name: http
+        - image: ghcr.io/kdwils/blog:main
+          imagePullPolicy: Always
+          name: blog-rollouts-demo
+          ports:
+            - containerPort: 8080
+              name: http
