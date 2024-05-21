@@ -17,7 +17,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: blog-blue
+  name: blog
   namespace: blog
 spec:
   selector:
@@ -31,7 +31,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: blog-green
+  name: blog-preview
   namespace: blog
 spec:
   selector:
