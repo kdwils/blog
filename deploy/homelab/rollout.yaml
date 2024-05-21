@@ -8,12 +8,10 @@ spec:
   selector:
     matchLabels:
       app: blog
-      slot: green
   template:
     metadata:
       labels:
         app: blog
-        slot: green
     spec:
       containers:
         - name: blog-rollouts-demo
