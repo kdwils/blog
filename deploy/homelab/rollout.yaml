@@ -10,11 +10,27 @@ spec:
     matchLabels:
       app: blog
   strategy:
-    blueGreen:
-      activeService: blog
-      autoPromotionEnabled: false
+    canary:
+      maxUnavailable: 0
+      maxSurge: "25%"
+      steps:
+        - setWeight: 5
+        - pause:
+            duration: 30s
+        - setWeight: 50
+        - pause:
+            duration: 30s
+        - setWeight: 90
+        - pause: {}
       previewReplicaCount: 1
-      previewService: blog-preview
+      canaryService: blog-preview
+      stableService: blog
+      trafficRouting:
+        istio:
+          virtualService:
+            name: blog
+            routes:
+              - blog
   template:
     metadata:
       labels:

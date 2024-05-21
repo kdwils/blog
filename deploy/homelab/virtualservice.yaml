@@ -12,8 +12,15 @@ spec:
     - match:
         - uri:
             prefix: /
+      name: blog
       route:
+        - destination:
+            host: blog.blog.svc.cluster.local
+            port:
+              number: 80
+            weight: 100
         - destination:
             host: blog-preview.blog.svc.cluster.local
             port:
               number: 80
+            weight: 0
