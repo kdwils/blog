@@ -2,28 +2,31 @@ apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
   name: rollout-bluegreen
+  namespace: blog
 spec:
   replicas: 2
   revisionHistoryLimit: 1
   selector:
     matchLabels:
       app: blog
+  strategy:
+    blueGreen:
+      activeService: blog
+      autoPromotionEnabled: false
+      previewReplicaCount: 1
+      previewService: blog-preview
   template:
     metadata:
       labels:
         app: blog
         backstage.io/kubernetes-id: blog
+      annotations:
+        sidecar.istio.io/inject: "true"
     spec:
       containers:
-        - name: blog-rollouts-demo
-          image: ghcr.io/kdwils/blog:main
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 8080
-              name: http
-  strategy:
-    blueGreen:
-      activeService: blog
-      previewService: blog-preview
-      autoPromotionEnabled: false
-      previewReplicaCount: 1
+      - image: ghcr.io/kdwils/blog:main
+        imagePullPolicy: Always
+        name: blog-rollouts-demo
+        ports:
+        - containerPort: 8080
+          name: http
