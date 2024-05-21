@@ -22,7 +22,6 @@ metadata:
 spec:
   selector:
     app: blog
-    slot: blue
   ports:
     - port: 80
       name: http
