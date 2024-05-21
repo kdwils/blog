@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: blog
+        backstage.io/kubernetes-id: blog
     spec:
       containers:
         - name: blog-rollouts-demo
@@ -19,6 +20,7 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+              name: http
   strategy:
     blueGreen:
       activeService: blog
