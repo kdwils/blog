@@ -11,20 +11,18 @@ spec:
       app: blog
   strategy:
     canary:
-      maxUnavailable: 0
-      maxSurge: "25%"
+      canaryService: blog-canary
+      stableService: blog
       steps:
-        - setWeight: 5
-        - pause:
-            duration: 30s
+        - setWeight: 0
+        - pause: { duration: 5m }
+        - setWeight: 20
+        - pause: { duration: 10m }
         - setWeight: 50
-        - pause:
-            duration: 30s
-        - setWeight: 90
+        - pause: { duration: 10m }
+        - setWeight: 99
         - pause: {}
       previewReplicaCount: 1
-      canaryService: blog-preview
-      stableService: blog
       trafficRouting:
         istio:
           virtualService:

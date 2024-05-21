@@ -18,9 +18,9 @@ spec:
             host: blog.blog.svc.cluster.local
             port:
               number: 80
-            weight: 100
+            weight: 99
         - destination:
             host: blog-preview.blog.svc.cluster.local
             port:
               number: 80
-            weight: 0
+            weight: 1
