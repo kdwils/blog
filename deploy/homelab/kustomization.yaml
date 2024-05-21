@@ -6,3 +6,5 @@ resources:
   - namespace.yaml
   - rollout.yaml
   - ingress.yaml
+  - gateway.yaml
+  - virtualservice.yaml
