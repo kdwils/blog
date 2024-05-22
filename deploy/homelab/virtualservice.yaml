@@ -19,10 +19,10 @@ spec:
             subset: stable
             port:
               number: 80
-            weight: 100
+          weight: 100
         - destination:
             host: blog.blog.svc.cluster.local
             subset: canary
             port:
               number: 80
-            weight: 0
+          weight: 0
