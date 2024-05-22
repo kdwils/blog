@@ -11,8 +11,6 @@ spec:
       app: blog
   strategy:
     canary:
-      canaryService: blog-canary
-      stableService: blog
       steps:
         - setWeight: 0
         - pause: { duration: 5m }
@@ -29,6 +27,10 @@ spec:
             name: blog
             routes:
               - blog
+          destinationRule:
+            name: rollout-destrule
+            canarySubsetName: canary
+            stableSubsetName: stable
   template:
     metadata:
       labels:

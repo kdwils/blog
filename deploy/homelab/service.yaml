@@ -8,7 +8,6 @@ metadata:
 spec:
   selector:
     app: blog
-    version: stable
   ports:
     - port: 80
       name: http
@@ -18,7 +17,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: blog-canary
+  name: blog-preview
   namespace: blog
 spec:
   selector:

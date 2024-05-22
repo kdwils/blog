@@ -16,11 +16,13 @@ spec:
       route:
         - destination:
             host: blog.blog.svc.cluster.local
+            subset: stable
             port:
               number: 80
-            weight: 99
+            weight: 100
         - destination:
-            host: blog-preview.blog.svc.cluster.local
+            host: blog.blog.svc.cluster.local
+            subset: canary
             port:
               number: 80
-            weight: 1
+            weight: 0
