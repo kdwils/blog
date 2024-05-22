@@ -13,11 +13,11 @@ spec:
     canary:
       steps:
         - setWeight: 0
-        - pause: { duration: 5m }
+        - pause: { duration: 1m }
         - setWeight: 20
-        - pause: { duration: 10m }
+        - pause: { duration: 1m }
         - setWeight: 50
-        - pause: { duration: 10m }
+        - pause: { duration: 1m }
         - setWeight: 99
         - pause: {}
       previewReplicaCount: 1
