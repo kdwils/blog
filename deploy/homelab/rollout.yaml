@@ -18,8 +18,7 @@ spec:
         - pause: { duration: 1m }
         - setWeight: 50
         - pause: { duration: 1m }
-        - setWeight: 99
-        - pause: {}
+        - setWeight: 100
       previewReplicaCount: 1
       trafficRouting:
         istio:
