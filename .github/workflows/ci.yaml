@@ -1,13 +1,21 @@
-name: Build Push Sign
+name: ci
+
 on:
   push:
-    branches: ["main"]
+    branches:
+      - 'main'
+
 jobs:
-  build-push-sign:
+  release_please:
+    if: github.event_name == 'push'
+    uses: kdwils/homelab-workflow/.github/workflows/release-please.yml@main
+
+  build_push_docker_image:
+    needs: release_please
+    if: github.ref_type == 'tag'
     uses: kdwils/homelab-workflow/.github/workflows/build-push-sign.yml@main
     secrets: inherit
     with:
       image: kdwils/blog
       registry: ghcr.io
-      environment: Homelab
       platforms: linux/amd64,linux/arm64
