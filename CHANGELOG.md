@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.2](https://github.com/kdwils/blog/compare/v0.0.1...v0.0.2) (2024-05-29)
+
+
+### Miscellaneous Chores
+
+* release 0.0.2 ([7d469aa](https://github.com/kdwils/blog/commit/7d469aaaf16c23cea54f7d4df30db3e45e31db4d))
+
 ## [0.0.1](https://github.com/kdwils/blog/compare/v0.0.1...v0.0.1) (2024-05-29)
 
 
