@@ -1,13 +1,40 @@
-name: Build Push Sign
+name: ci
+
 on:
   push:
-    branches: ["main"]
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - 'main'
+
 jobs:
-  build-push-sign:
-    uses: kdwils/homelab-workflow/.github/workflows/build-push-sign.yml@main
-    secrets: inherit
-    with:
-      image: kdwils/blog
-      registry: ghcr.io
-      environment: Homelab
-      platforms: linux/amd64,linux/arm64
+  release_please:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Please
+        uses: kdwils/homelab-workflow/.github/workflows/release-please.yml@main
+
+  build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Docker Image
+        uses: kdwils/homelab-workflow/.github/workflows/build-image.yml@main
+        with:
+          platforms: linux/amd64,linux/arm64
+          dockerfile: Dockerfile
+
+  build_push_sign:
+    needs: release_please
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and Push Docker Image
+        uses: kdwils/homelab-workflow/.github/workflows/build-push-sign.yml@main
+        with:
+          image: kdwils/blog
+          registry: ghcr.io
+          platforms: linux/amd64,linux/arm64
+          dockerfile: Dockerfile
