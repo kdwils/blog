@@ -1,0 +1,15 @@
+name: ci
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build_push_docker_image:
+    uses: kdwils/homelab-workflow/.github/workflows/build-push-sign.yml@main
+    secrets: inherit
+    with:
+      image: kdwils/blog
+      registry: ghcr.io
+      platforms: linux/amd64,linux/arm64

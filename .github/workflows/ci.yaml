@@ -10,12 +10,3 @@ jobs:
     if: github.event_name == 'push'
     secrets: inherit
     uses: kdwils/homelab-workflow/.github/workflows/release-please.yml@main
-
-  build_push_docker_image:
-    if: github.ref_type == 'tag'
-    uses: kdwils/homelab-workflow/.github/workflows/build-push-sign.yml@main
-    secrets: inherit
-    with:
-      image: kdwils/blog
-      registry: ghcr.io
-      platforms: linux/amd64,linux/arm64
