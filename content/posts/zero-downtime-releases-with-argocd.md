@@ -44,3 +44,4 @@ A generic kubernetes deployment might consist of the following:
 
 Naturally, zero downtime releases are going to double the required resources for your applications for a period of time. At the minimum there will a pod that corresponds with the `stable` version of your application, and another for the new `preview` version. Each of these pods will have their own respective kubernetes service resources. There could also be ingresses, autoscalers, and any other resource tied to your `stable` version.
 
+
