@@ -10,5 +10,5 @@ jobs:
     if: github.event_name == 'pull_request'
     uses: kdwils/homelab-workflow/.github/workflows/build-image.yml@main
     with:
-        platforms: linux/amd64,linux/arm64
-        dockerfile: Dockerfile
+      platforms: linux/amd64,linux/arm64
+      dockerfile: Dockerfile
