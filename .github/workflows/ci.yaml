@@ -8,20 +8,14 @@ on:
 jobs:
   release_please:
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Release Please
-        uses: kdwils/homelab-workflow/.github/workflows/release-please.yml@main
+    uses: kdwils/homelab-workflow/.github/workflows/release-please.yml@main
 
-  build_push_sign:
+  build_push_docker_image:
     needs: release_please
     if: github.ref_type == 'tag'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build and Push Docker Image
-        uses: kdwils/homelab-workflow/.github/workflows/build-push-sign.yml@main
-        with:
-          image: kdwils/blog
-          registry: ghcr.io
-          platforms: linux/amd64,linux/arm64
-          dockerfile: Dockerfile
+    uses: kdwils/homelab-workflow/.github/workflows/build-push-sign.yml@main
+    secrets: inherit
+    with:
+      image: kdwils/blog
+      registry: ghcr.io
+      platforms: linux/amd64,linux/arm64
