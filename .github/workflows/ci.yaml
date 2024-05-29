@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - 'main'
-  pull_request:
-    branches:
-      - 'main'
 
 jobs:
   release_please:
@@ -15,16 +12,6 @@ jobs:
     steps:
       - name: Release Please
         uses: kdwils/homelab-workflow/.github/workflows/release-please.yml@main
-
-  build:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Docker Image
-        uses: kdwils/homelab-workflow/.github/workflows/build-image.yml@main
-        with:
-          platforms: linux/amd64,linux/arm64
-          dockerfile: Dockerfile
 
   build_push_sign:
     needs: release_please
