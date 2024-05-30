@@ -7,6 +7,5 @@ on:
 
 jobs:
   release_please:
-    if: github.event_name == 'push'
     secrets: inherit
     uses: kdwils/homelab-workflow/.github/workflows/release-please.yml@main
