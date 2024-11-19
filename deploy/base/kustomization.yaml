@@ -5,7 +5,7 @@ resources:
   - blog.yaml
 
 images:
-  - name: blog
+  - name: blog-dev
     newName: ghcr.io/kdwils/blog
     newTag: main
   - name: blog-prod
