@@ -1,6 +1,6 @@
 # blog
 
-![sync status](https://argocd.kyledev.co/api/badge?name=blog&revision=true)
+![sync status](https://argocd.kyledev.co/api/badge?name=blog-prod&revision=true&showAppName=true)
 
 # About
 
