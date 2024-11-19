@@ -2,12 +2,4 @@ kind: Kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 
 resources:
-  - blog.yaml
-
-images:
-  - name: blog-dev
-    newName: ghcr.io/kdwils/blog
-    newTag: main
-  - name: blog-prod
-    newName: ghcr.io/kdwils/blog
-    newTag: prod
+  - service.yaml

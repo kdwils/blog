@@ -5,3 +5,8 @@ resources:
   - ../base
   - ingress.yaml
   - deployment.yaml
+
+images:
+  - name: blog
+    newName: ghcr.io/kdwils/blog
+    newTag: main
