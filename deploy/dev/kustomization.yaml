@@ -2,9 +2,10 @@ kind: Kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 
 resources:
-  - ../base
   - ingress.yaml
   - deployment.yaml
+  - service.yaml
+  - namespace.yaml
 
 images:
   - name: blog

@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: blog
+  name: blog-prod-prod
 spec:
   selector:
     matchLabels:
-      app: blog
+      app: blog-prod
   template:
     metadata:
       labels:
-        app: blog
+        app: blog-prod
     spec:
       containers:
-        - name: blog
-          image: blog
+        - name: blog-prod
+          image: blog-prod
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
