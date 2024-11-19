@@ -1,6 +1,6 @@
 +++
 author = "Kyle Wilson"
-title = "Self hosting the bluesky PDS on Kuberentes"
+title = "Self hosting the Bluesky PDS on Kubernetes"
 date = "2024-11-18"
 description = "self hosting the bluesky official PDS server on kubernetes and configuring a custom handle"
 summary = "self hosting the bluesky official PDS server on kubernetes and configuring a custom handle"
@@ -14,23 +14,25 @@ tags = [
 
 ## Getting started
 
-For those who are looking for the yaml sauce: https://github.com/kdwils/homelab/tree/main/apps/bluesky - eat up.
+For those looking for the YAML configuration, here’s the repository: https://github.com/kdwils/homelab/tree/main/apps/bluesky.
 
-Bluesky documentation (i'm assuming you already found this): https://github.com/bluesky-social/pds?tab=readme-ov-file#self-hosting-pds
+Bluesky documentation (I'm assuming you already found this): https://github.com/bluesky-social/pds?tab=readme-ov-file#self-hosting-pds
 
-Bluesky is another flavor of twitter/x (jack dorsey twitter v2), and allows you to self host a decentralized server that allows manage your social media data independently. Naturally, as someone who self hosts and occasionally tweets, this seemed like a cool thing to run on my kubernets homelab.
+Bluesky is another flavor of twitter/x (jack dorsey twitter v2), and allows you to self host a decentralized server that allows manage your social media data independently. Naturally, as someone who self hosts and occasionally tweets, this seemed like a cool thing to run on my kubernetes homelab.
+
+I decided to write this post to help others looking to self-host in a similar environment
 
 ### Kubernetes Caveats
 
-The docker image officially supplied by bluesky doesn't ship with the `pdsadmin` cli which makes the github tutorial a little more awkward to follow if you're planning to host on kuberenetes. I decided to write this post to help others looking to self host in a similar environment.
+The Docker image officially supplied by Bluesky doesn't ship with the `pdsadmin` CLI, which makes the GitHub tutorial a little more awkward to follow if you're planning to host on Kubernetes. 
 
 We can get around this by making rpc calls to the self hosted server.
 
 ### Manifest
 
-There are a few resources we need to create to host the server. I use kustomize and a raw manifest approach
+There are a few resources we need to create to host the server. I use Kustomize and a raw manifest approach.
 
-Service and (optionally) a service account.. pretty standard so far. The server is exposed on [port 3000 on the container](https://github.com/bluesky-social/pds/blob/main/Dockerfile#L21).
+Service and (optionally) a service account.. pretty standard so far. The server is exposed on [port 3000 in the container](https://github.com/bluesky-social/pds/blob/main/Dockerfile#L21).
 
 ```yaml
 apiVersion: v1
@@ -179,7 +181,8 @@ Defaults provided in the [installion script](https://github.com/bluesky-social/p
   value: "https://bsky.network"
 ```
 
-The hostname the server that is public internet facing:
+The hostname of the server that is public-facing on the internet:
+
 ```yaml
 - name: PDS_HOSTNAME
   value: bluesky.kyledev.co
@@ -226,7 +229,7 @@ openssl ecparam --name secp256k1 --genkey --noout --outform DER | tail --bytes=+
 
 #### The SMTP server
 
-For things like email verification, the PDS server needs to be able to send an email. I just used my google account to handle this for me.
+For account verification, the PDS server needs to send emails. I used my Google account to handle this.
 
 Here is a reference to start with: https://support.google.com/accounts/answer/185833?hl=en
 
@@ -249,7 +252,8 @@ For example, this command should output `bXktdmFsdWU=`
 echo -n 'my-value' | base64
 ```
 
-The secret to be created should look something like
+The secret to be created should look like the following:
+
 ```yaml
 apiVersion: v1
 data:
@@ -294,7 +298,7 @@ Once deployed and running in kuberentes, we can start the account sign up proces
 ### Exposing our PDS server
 
 
-I use cloudflare tunnels to expose anything outside of my kubernetes cluster. To look into doing the same, you can catch up on my [previous post](/content/posts/cloudflared-tunnel.md).
+I use Cloudflare tunnels to expose services outside of my Kubernetes cluster. To learn how to do the same, check out my [previous post](/posts/cloudflare-tunnel).
 
 Add the ingress config for the PDS server. Here is an example of the format my cloudflared deployment config uses.
 ```yaml
@@ -344,4 +348,4 @@ And we're live...
 
 ![live](/images/bluesky/live.png)
 
-Anyways, shamless plug https://bsky.app/profile/kdwils.kyledev.co for a follow. Yell at me here if this doesn't work for you.
+Anyway, here's a shameless plug: https://bsky.app/profile/kdwils.kyledev.co for a follow. Yell at me here if this doesn't work for you.
