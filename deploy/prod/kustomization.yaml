@@ -6,6 +6,6 @@ resources:
   - service.yaml
 
 images:
-  - name: blog
+  - name: blog-prod
     newName: ghcr.io/kdwils/blog
-    newTag: prod-prod
+    newTag: prod

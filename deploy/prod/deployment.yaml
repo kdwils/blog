@@ -12,7 +12,7 @@ spec:
         app: blog-prod
     spec:
       containers:
-        - name: blog-prod
+        - name: blog
           image: blog-prod
           imagePullPolicy: Always
           ports:
