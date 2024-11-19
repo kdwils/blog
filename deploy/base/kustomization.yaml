@@ -5,5 +5,9 @@ resources:
   - blog.yaml
 
 images:
-  - name: ghcr.io/kdwils/blog
-    newTag: v0.0.5
+  - name: blog
+    newName: ghcr.io/kdwils/blog
+    newTag: dev
+  - name: blog-prod
+    newName: ghcr.io/kdwils/blog
+    newTag: prod
