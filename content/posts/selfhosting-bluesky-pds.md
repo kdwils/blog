@@ -14,7 +14,7 @@ tags = [
 
 ## Getting started
 
-For those who are looking for the yaml sauce: https://github.com/kdwils/homelab/tree/main/apps/bluesky; eat up.
+For those who are looking for the yaml sauce: https://github.com/kdwils/homelab/tree/main/apps/bluesky - eat up.
 
 Bluesky documentation (i'm assuming you already found this): https://github.com/bluesky-social/pds?tab=readme-ov-file#self-hosting-pds
 
