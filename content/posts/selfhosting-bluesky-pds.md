@@ -224,7 +224,6 @@ openssl ecparam --name secp256k1 --genkey --noout --outform DER | tail --bytes=+
       key: plcRotationKey
 ```
 
-
 #### The SMTP server
 
 For things like email verification, the PDS server needs to be able to send an email. I just used my google account to handle this for me.
@@ -236,7 +235,6 @@ Look for `Create and manage your app passwords`. Create an app password, and cop
 ```shell
 abcd efgh ijkl mnop
 ```
-
 
 #### Creating the secret
 
@@ -310,6 +308,12 @@ Add the DNS record using the cloudflared CLI.
 ```shell
 cloudflared tunnel route dns <your-tunnel-name> <your-bluesky-host>
 ```
+
+One problem with using cloudflared tunnels is verifying your email address. I ran into issues mentioned in these github issues and was running on version 
+https://github.com/bluesky-social/pds/issues/100
+https://github.com/bluesky-social/pds/issues/106
+
+I ended up exposing the PDS server through my tailnet and making the RPC call to send the verification email that way. I copy pasted the http request from my browser and used the my tailnet domain instead.. hacky but it worked. The comments in these issues suggested editing the DB itself which I did not want to do. I was also using image version `2024.11.0`.
 
 ### Generating an invite code
 
