@@ -338,6 +338,10 @@ Next, in cloudflare, I followed the provided instructions and created a TXT reco
 
 ![txt record](/images/bluesky/txt-record.png)
 
+You can verify using this debug tool if needed to ensure you DNS record is working https://bsky-debug.app/handle
+
 And we're live...
 
 ![live](/images/bluesky/live.png)
+
+Anyways, shamless plug https://bsky.app/profile/kdwils.kyledev.co for a follow. Yell at me here if this doesn't work for you.
