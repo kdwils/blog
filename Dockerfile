@@ -1,10 +1,10 @@
-FROM alpine:latest as builder
+FROM alpine:latest AS builder
 
 RUN apk add --update hugo
 
 WORKDIR /src
 COPY . .
-ENV HUGO_ENV production
+ENV HUGO_ENV=production
 RUN hugo
 
 FROM nginx:1.27.4-alpine-slim
