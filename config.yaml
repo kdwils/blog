@@ -1,6 +1,9 @@
 baseURL: "https://blog.kyledev.co"
 title: blog.kyledev.co
-paginate: 5
+
+pagination:
+  pagerSize: 5
+
 theme: PaperMod
 
 enableInlineShortcodes: true
@@ -96,7 +99,7 @@ privacy:
     disabled: true
     simple: true
 
-  twitter:
+  x:
     disabled: true
     enableDNT: true
     simple: true
@@ -112,5 +115,5 @@ privacy:
 services:
   instagram:
     disableInlineCSS: true
-  twitter:
+  x:
     disableInlineCSS: true
