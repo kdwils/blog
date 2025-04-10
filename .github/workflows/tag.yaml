@@ -1,0 +1,19 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "prod"
+  pull_request:
+
+jobs:
+  push_tags:
+    uses: kdwils/homelab-workflow/.github/workflows/update-image-tag.yml@main
+    secrets: inherit
+    with:
+      image: kdwils/blog
+      registry: ghcr.io
+      tags: |
+        prod
