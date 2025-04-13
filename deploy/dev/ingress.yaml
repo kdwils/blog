@@ -17,6 +17,16 @@ spec:
                 name: blog
                 port:
                   number: 80
+    - host: blog.kyledev.co
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: blog
+                port:
+                  number: 80
   tls:
     - hosts:
         - blog.int.kyledev.co
