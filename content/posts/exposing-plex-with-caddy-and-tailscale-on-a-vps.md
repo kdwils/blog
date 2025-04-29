@@ -21,15 +21,9 @@ This guide assumes the following...
 
 ## Use Case
 
-Sharing a Plex server with friends and family presents unique challenges. While sharing via Tailscale works for tech-savvy users, it becomes cumbersome when dealing with smart TVs or less technical users.
-
-This necessitated exposing Plex (and my cluster) to the internet. While I had successfully used Cloudflare tunnels for other services like [mealie](https://github.com/mealie-recipes/mealie), [argo-cd](https://github.com/argoproj/argo-cd), and [bluesky personal data server](/content/posts/selfhosting-bluesky-pds.md), potential TOS concerns led me to seek alternatives.
-
-## Use Case
-
 Sharing a Plex server with friends and family presents unique challenges. While sharing via Tailscale works for tech-savvy users, it becomes cumbersome when dealing with smart TVs or my not so technical parents.
 
-I had previously used Cloudflare tunnels to expose services like [mealie](https://github.com/mealie-recipes/mealie), [argo-cd](https://github.com/argoproj/argo-cd), and [bluesky personal data server](/content/posts/selfhosting-bluesky-pds.md). However, potential TOS concerns with Plex led me to seek alternatives.
+I had previously used Cloudflare tunnels to expose services like [mealie](https://github.com/mealie-recipes/mealie), [bluesky personal data server](/content/posts/selfhosting-bluesky-pds.md), and even this [blog](https://github.com/kdwils/homelab/blob/main/infra/cloudflared/configmap.yaml#L13-L14). However, potential TOS concerns with Plex led me to seek alternatives.
 
 Rather than port forwarding at home, I opted for a VPS solution with a public IP address that could communicate with my tailnet machines.
 
@@ -39,7 +33,7 @@ A single entry point allows me to gather metrics via prometheus and visualize it
 
 I didn't realize until after installing crowdsec in my cluster that my version of ingress-nginx was [not supported](https://docs.crowdsec.net/u/bouncers/ingress-nginx/).
 
-I also found out that crowdsec doesn't support oracle linux yet.. bummer. 
+I also found out that crowdsec doesn't support oracle linux yet.. bummer.
 
 ## The Virtual Private Server
 I wasn't opposed to paying a few bucks per month for a small vps, but I figured I would give oracle free tier a shot first since there was nothing to lose but time.
