@@ -1,4 +1,2 @@
 resources:
-  - dev/
-  - prod/
-  - namespace.yaml
+  - apps/
