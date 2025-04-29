@@ -56,7 +56,7 @@ Originally, everything was allowed to talk to everything else on my tailnet by d
 
 ### Exposing Kubernetes services as tailnet machines
 
-NOTE: If you're not on kuberenetes, you can skip this section.
+**_NOTE:_**  If you're not on Kubernetes, you can skip this section.
 
 I deployed tailscale to my homelab [here](https://github.com/kdwils/homelab/tree/main/infra/tailscale). Further details on installation can be found [in the Tailscale documentation](https://tailscale.com/kb/1185/Kubernetes/) on configuring the tags and getting an auth key.
 
@@ -92,7 +92,14 @@ spec:
   type: LoadBalancer # load balancer type required
 ```
 
-I could then verify it was exposed by visiting my tailnet dashboard or viewing the service via `kubectl`.
+I could then verify it was exposed by visiting my tailnet dashboard or viewing the service via `kubectl`
+
+```shell
+$ kubectl -n ingress-nginx get svc/ingress-nginx-controller-tailscale 
+
+NAME                                 TYPE           CLUSTER-IP     EXTERNAL-IP                                   PORT(S)                      AGE
+ingress-nginx-controller-tailscale   LoadBalancer   10.43.23.100   100.65.13.80,ingress-nginx.tail18ac2.ts.net   80:32012/TCP,443:31782/TCP   15d
+```
 
 Next, we need to make sure we have an ingress resource defined for Plex that we plan to expose to the public internet later.
 
@@ -146,18 +153,11 @@ spec:
                   name: http
 ```
 
-```shell
-$ k -n ingress-nginx get svc/ingress-nginx-controller-tailscale
-
-NAME                                 TYPE           CLUSTER-IP     EXTERNAL-IP                                   PORT(S)                      AGE
-ingress-nginx-controller-tailscale   LoadBalancer   10.43.23.100   100.65.13.80,ingress-nginx.tail18ac2.ts.net   80:32012/TCP,443:31782/TCP   15d
-```
-
 ### Configuring ACLs
 
 I made two new tags, one for the VPS, and one for ingress-nginx.
 
-If you want a similar set up, and you're on Kubernetes your tag might look like..
+If you want a similar set up, and you're on Kubernetes your tags might look like..
 ```json
 "tagOwners": {
     "tag:k8s-operator": [],
@@ -188,9 +188,8 @@ Next, I configured the VPS tag so that it can only talk to the ingress controlle
 
 Finally, we need to make sure that `k8s` tags can talk to other `k8s` tags.
 
-I also added a configuration to allow my laptop to talk to any machines.
+I also added a configuration to allow my laptop to talk to any machine as well.
 
-A final configuration might look like the following
 ```json 
 {
     "tagOwners": {
@@ -229,9 +228,9 @@ Finally, make sure to add the correct tags to your machines. The above ACLs mean
 
 Given that I already use cloudflare tunnels, I used cloudflare to create a DNS record to point my `plex.my-domain.com` to the IP address of my VPS.
 
-To do this, I created an `A` record with a name of `plex`, and then used the public internet IP address of my VPS as the `IPv4 Address`.
+To do this, I created an `A` type record with a name of `plex`, and then used the public internet IP address of my VPS as the `IPv4 Address`.
 
-![dns-record](/images/exposing-plex/dns-record.png)
+![dns-record](/images/exposing-plex/dns-record.jpeg)
 
 ## The reverse proxy
 
@@ -245,7 +244,7 @@ On my VPS, this lives at `/etc/caddy/Caddyfile`.
 
 Mine looks like the following - but with a real domain.
 
-```
+```shell
 plex.my-domain.com {
     reverse_proxy ingress-nginx:80 {
         header_up X-Forwarded-Proto {scheme}
@@ -256,21 +255,21 @@ plex.my-domain.com {
 ```
 
 Let's break it down:
-- The ingress-controller hostname is `ingress-nginx` in tailscale for MagicDNS
+- The ingress-controller hostname is `ingress-nginx` in tailscale using MagicDNS
 - The Kubernetes service for `ingress-nginx` is listening on port 80
 - `plex.my-domain.com` will be the set as the `X-Forwarded-Host` that ingress-nginx will consume
-- An ingress resource exists using that host pointing to the plex service
+- An ingress resource exists with a host `plex.my-domain.com` that forwards trafic to the plex service
+
+Once the Caddyfile changes were made, I was able to reach plex externally at `plex.my-domain.com`
 
 ## Closing Thoughts
 
-This is a lot of setup to finally have `plex.my-domain.com` resolve successfully, but it was a great learning experience that achieved several goals:
+This is a lot of setup to get this to resolve, but it was a great learning experience that achieved several goals:
 
 - Exposed Plex to the internet without port forwarding at home
-- Maintained a single ingress point for all public services
-- Leveraged Tailscale's ACLs for enhanced security
-- Used Oracle's free tier VPS to keep costs at zero
+- Maintained a single ingress point for all Kubernetes services exposed
 - Kept the setup relatively simple with Caddy as the reverse proxy
 
-The nice thing about this setup is that it's not Plex-specific - you could use the same pattern to expose any other service running in your homelab. Just add another ingress resource and Caddy configuration.
+The nice thing about this setup is that it's not Plex-specific - you could use the same pattern to expose any other service running in your homelab.
 
 The combination of Tailscale, Caddy, and Kubernetes provides a robust and secure way to expose your homelab services to the internet while maintaining fine-grained access control.
