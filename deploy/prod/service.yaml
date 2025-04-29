@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: blog-prod
+  namespace: blog
 spec:
   selector:
     app: blog-prod
