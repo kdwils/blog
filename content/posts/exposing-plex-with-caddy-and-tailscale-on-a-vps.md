@@ -103,45 +103,16 @@ ingress-nginx-controller-tailscale   LoadBalancer   10.43.23.100   100.65.13.80,
 
 Next, we need to make sure we have an ingress resource defined for Plex that we plan to expose to the public internet later.
 
-I have two, one for my internal Plex tailnet, and another I plan to use as the public host.
-
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-  name: plex
+  name: plex-public
   namespace: media
 spec:
   ingressClassName: nginx
   rules:
-    - host: plex.int.my-domain.com
-      http:
-        paths:
-          - backend:
-              service:
-                name: plex
-                port:
-                  name: http
-            path: /
-            pathType: Prefix
-  tls:
-    - hosts:
-        - plex.int.my-domain.com
-      secretName: plex-tls-prod
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    nginx.ingress.Kubernetes.io/ssl-redirect: "false"
-  name: plex-prod # public internet ingress hostname
-  namespace: media
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: plex.my-domain.com
+    - host: plex.my-domain.com # externally exposed hostname
       http:
         paths:
           - path: /
@@ -260,7 +231,7 @@ Let's break it down:
 - `plex.my-domain.com` will be the set as the `X-Forwarded-Host` that ingress-nginx will consume
 - An ingress resource exists with a host `plex.my-domain.com` that forwards trafic to the plex service
 
-Once the Caddyfile changes were made, I was able to reach plex externally at `plex.my-domain.com`
+Once the Caddyfile changes were made, I was able to reach my plex instance at `plex.my-domain.com`
 
 ## Closing Thoughts
 
@@ -270,6 +241,6 @@ This is a lot of setup to get this to resolve, but it was a great learning exper
 - Maintained a single ingress point for all Kubernetes services exposed
 - Kept the setup relatively simple with Caddy as the reverse proxy
 
-The nice thing about this setup is that it's not Plex-specific - you could use the same pattern to expose any other service running in your homelab.
+The nice thing about this setup is that it's not Plex specific - you could use the same pattern to expose any other service running in your homelab.
 
 The combination of Tailscale, Caddy, and Kubernetes provides a robust and secure way to expose your homelab services to the internet while maintaining fine-grained access control.
