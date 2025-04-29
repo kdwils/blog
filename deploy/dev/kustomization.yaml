@@ -5,7 +5,6 @@ resources:
   - ingress.yaml
   - deployment.yaml
   - service.yaml
-  - namespace.yaml
 
 images:
   - name: blog
