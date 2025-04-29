@@ -1,13 +1,11 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: blog
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+  name: blog-public
 spec:
   ingressClassName: nginx
   rules:
-    - host: blog.int.kyledev.co
+    - host: blog.kyledev.co
       http:
         paths:
           - path: /
@@ -17,7 +15,3 @@ spec:
                 name: blog
                 port:
                   number: 80
-  tls:
-    - hosts:
-        - blog.int.kyledev.co
-      secretName: blog-kyledev-tls-prod
