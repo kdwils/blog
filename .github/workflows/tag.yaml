@@ -6,7 +6,6 @@ on:
       - main
     tags:
       - "prod"
-  pull_request:
 
 jobs:
   push_tags:
