@@ -5,6 +5,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - namespace.yaml
 
 images:
   - name: blog-prod
