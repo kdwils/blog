@@ -15,7 +15,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: blog
+                name: blog-dev
                 port:
                   number: 80
   tls:
