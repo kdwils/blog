@@ -5,7 +5,7 @@ resources:
   - ingress.yaml
   - deployment.yaml
   - service.yaml
-
+  - vpa.yaml
 images:
   - name: blog
     newName: ghcr.io/kdwils/blog

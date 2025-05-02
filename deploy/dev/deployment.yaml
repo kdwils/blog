@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: blog
+  name: blog-dev
   namespace: blog
 spec:
   selector:
     matchLabels:
-      app: blog
+      app: blog-dev
   template:
     metadata:
       labels:
-        app: blog
+        app: blog-dev
     spec:
       containers:
-        - name: blog
+        - name: blog-dev
           image: blog
           imagePullPolicy: Always
           ports:

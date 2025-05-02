@@ -6,8 +6,8 @@ resources:
   - service.yaml
   - ingress.yaml
   - namespace.yaml
-
+  - vpa.yaml
 images:
-  - name: blog-prod
+  - name: blog
     newName: ghcr.io/kdwils/blog
     newTag: prod
