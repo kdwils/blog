@@ -17,7 +17,7 @@ spec:
               service:
                 name: blog-dev
                 port:
-                  number: 80
+                  name: http
   tls:
     - hosts:
         - blog.int.kyledev.co
