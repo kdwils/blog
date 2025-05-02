@@ -16,7 +16,7 @@ spec:
   source:
     path: deploy/prod
     repoURL: "https://github.com/kdwils/blog"
-    targetRevision: main
+    targetRevision: prod
   sources: []
   project: apps
   syncPolicy:

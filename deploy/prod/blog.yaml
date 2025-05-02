@@ -27,3 +27,17 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog
+  namespace: blog
+spec:
+  selector:
+    app: blog
+  ports:
+    - port: 80
+      name: http
+      targetPort: http
+  type: ClusterIP
