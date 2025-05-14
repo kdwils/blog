@@ -10,6 +10,12 @@ spec:
   hostnames:
     - "blog.kyledev.co"
   rules:
-    - backendRefs:
+    - filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: X-Forwarded-Proto
+                value: https
+      backendRefs:
         - name: blog
           port: 80
