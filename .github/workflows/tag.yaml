@@ -1,0 +1,14 @@
+name: tag
+
+on:
+  push:
+    tags:
+        - '*'
+
+jobs:
+  push_image_tag:
+    uses: kdwils/homelab-workflow/.github/workflows/update-image-tag.yml@main
+    secrets: inherit
+    with:
+      image: kdwils/blog
+      registry: ghcr.io
