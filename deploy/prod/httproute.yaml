@@ -7,15 +7,10 @@ spec:
   parentRefs:
     - name: homelab
       namespace: envoy-gateway-system
+      sectionName: kyledev-https
   hostnames:
     - "blog.kyledev.co"
   rules:
-    - filters:
-        - type: RequestHeaderModifier
-          requestHeaderModifier:
-            set:
-              - name: X-Forwarded-Proto
-                value: https
-      backendRefs:
+    - backendRefs:
         - name: blog
           port: 80
