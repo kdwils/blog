@@ -1,23 +1,26 @@
 +++
 author = "Kyle Wilson"
 title = "Goodbye beloved ingress-nginx controller"
-date = "2025-04-28"
+date = "2025-05-18"
 description = "The conversion from ingress-nginx controller to envoy gateway"
-summary = "How I converted all of my ingress traffic to the gateway api with Envoy"
+summary = "How I swapped to envoy gateway from ingress-nginx controller with the new Kuberenetes Gateway API"
 tags = [
     "Kubernetes",
     "Tailscale",
     "Envoy Gateway",
     "ingress-nginx",
+    "envoy gateway",
     "cert-manager"
 ]
 +++
 
 ## Why?
 
-I've been using ingress-nginx for years now, and while I haven't had any complaints, it is soon to be replaced by [ingate](https://github.com/kubernetes-sigs/ingate).
+I've been using ingress-nginx for years now, and while I haven't had any complaints, it is soon to be replaced by [ingate](https://github.com/kubernetes-sigs/ingate). I'll probably give that a try when it's released, but until then I needed an alternative gateway controller.
 
-I'll probably give that a try when it's released, but until then I needed an alternative gateway controller. Additionally, Envoy Gateway is starting the process of being adopted at my workplace, so I wanted to get familiar with it and have an environemnt for testing.
+Envoy Gateway is starting the process of being adopted at my workplace, so I wanted to get familiar with it and have an environemnt for testing.
+
+I might as well get ahead of the curve and use the new Kubernetes Gateway API.
 
 ## Creating a gateway
 
@@ -56,9 +59,9 @@ tailscale.com/expose: "true"
 tailscale.com/hostname: "homelab-gateway" # optional - sets the machine name in the tailnet
 ```
 
-The service also needs to be of type `LoadBalancer` and have its `loadBalancerClass` set to `tailscale` to expose it to the tailnet.
+The service also needs to be of type `LoadBalancer` with a `loadBalancerClass` of type `tailscale` to expose it to the tailnet.
 
-We can create a reusable EnvoyProxy config to tie to this gateway, and other gateways in the future. This is essentially a template for the gateway to use.
+We can create an EnvoyProxy config for this gateway to expose it to the tailnet. This is essentially a template for a gateway to use so any gateway in the future can use it too.
 ```yaml
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyProxy
@@ -111,37 +114,39 @@ homelab-gateway   LoadBalancer   10.43.216.210   100.79.90.18,homelab-gateway.ta
 
 In my cluster, I have two setups:
 
-A `*.int.kyledev.co` that domain resolves by running pihole on a machine that is connected to my tailnet, and then adding the tailnet IP as a global nameserver for the tailnet. I also override DNS for the machines in my tailnet.
+A `*.kyledev.co` wildcard that is exposed to the public internet, and is served by a cloudflared tunnel to my cluster.
 
-A `*.kyledev.co` that domain is exposed to the public internet, and is served by a cloudflared tunnel to my cluster.
+And as mentioned previously, `*.int.kyledev.co`, which resolves by running pihole on a machine that is connected to my tailnet. To use this I have to be connected to the tailnet.
 
 On the pihole server, I create a dnsmasq config at `/etc/dnsmasq.d/99-tsnet.conf` where `100.79.90.18` is the tailnet IP of my envoy proxy tailscale machine
 ```shell
 address=/int.kyledev.co/100.79.90.18
 ```
 
-This will point anything that matches the `*.int.kyledev.co` wildcard to the tailnet IP of the gateway service exposed by the tailscale operator. As a bonus, I also get tailnet-wide benefits of using pihole as a DNS server.
+This will point anything that matches the `*.int.kyledev.co` wildcard to the tailnet IP of the gateway service exposed by the tailscale operator. 
 
-Next, we need to configure the gateway listeners for traffic we want the gateway to be responsible for.
+I then override DNS for the machines on the tailnet to point to my pihole server. As a bonus, I also get tailnet-wide benefits of using pihole as a DNS server.
 
-I had three scenarios I wanted to cover:
+Next, I had 3 scenarios I wanted to cover:
 ```markdown
 1. Automatic certificates for my domains
 2. Allow HTTP + HTTPS traffic to *.kyledev.co
 3. Allow HTTPS traffic to *.int.kyledev.co
 ```
 
+Steps 2 and 3 are separate because I use different certificates for each scenario.
+
 ### Automatic certificates
 
 Luckily, `cert-manager` supports the gateway api already, and I was already using it for ingress resources. I use version `1.17.2` of cert-manager.
 
 To enable the gateway api for `cert-manager`, we need to add this flag to the deployment of the controller
-```yaml
-- --enable-gateway-api
+```shell
+--enable-gateway-api
 ```
 
 My full deployment looks like this for the controller:
-{{< details "Gateway controller deployment" >}}
+{{< details "deployment.yaml" >}}
 ```yaml
 # Source: cert-manager/templates/deployment.yaml
 apiVersion: apps/v1
@@ -228,7 +233,7 @@ spec:
 ```
 {{< /details >}}
 
-Now we can annorate our gateway with `cert-manager` annotations like `cert-manager.io/cluster-issuer: letsencrypt-prod` to automatically provision certificates for us with our issues of choice.
+Now we can annotate the gateway with `cert-manager.io/cluster-issuer: letsencrypt-prod` to automatically provision certificates for us with an issuer of choice.
 
 ### Traffic Configuration
 
@@ -236,13 +241,13 @@ Each gateway can be configured with an array of listeners which allows fine grai
 
 In my setup, I needed to create 3 listeners for the scenarios I outlined above.
 
-`*.kyledev.co` needs to receive HTTP and HTTPS traffic
+`*.kyledev.co` needs to receive HTTP and HTTPS traffic with a specific certificate
 
-`*.int.kyledev.co` needs to receive HTTPS traffic
+`*.int.kyledev.co` needs to receive HTTPS traffic with a specific certificate
 
 In both of these scenarios, I wanted to be able to create HTTPRoutes from any namespace, and let the gateway handle terminating TLS.
 
-The certificateRefs are the secrets that cert-manager will create for us. If you're not using cert-manager (or any other automation), you need to create the secrets manually.
+The certificateRefs are the secrets that cert-manager will create for us. They do not need to exist beforehand. If you're not using cert-manager (or any other automation), you need to create the secrets manually.
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
@@ -319,12 +324,11 @@ spec:
 ```
 
 This blog, for example, is now exposed from my cluster using the gateway api. You can see the `HTTPRoute` resources for
-- [dev](https://github.com/kdwils/blog/blob/dev/deploy/dev/httproute.yaml) internally used in my tailnet before publishing a new post at `blog.int.kyledev.co`
-- [prod](https://github.com/kdwils/blog/blob/prod/deploy/prod/httproute.yaml) for the ready changes at `blog.kyledev.co`
+- [dev](https://github.com/kdwils/blog/blob/dev/deploy/dev/httproute.yaml) internally used in my tailnet for testing purposes `blog.int.kyledev.co`
+- [prod](https://github.com/kdwils/blog/blob/prod/deploy/prod/httproute.yaml) for the "battle-tested" changes at `blog.kyledev.co`, which is what you're reading right now
 
-For some traffic I expose to the public internet, I use cloudflared to create a tunnel to my cluster. I did a previous post on that setup [here](/posts/cloudflare-tunnel)
+For some traffic I expose to the public internet, I use cloudflared to create a tunnel to my cluster. 
 
-My tunnel configuration for the public instance of my blog is [here](https://github.com/kdwils/homelab/blob/main/infra/cloudflared/configmap.yaml#L13-L14).
+I did a previous post on that setup [here](/posts/cloudflare-tunnel). My tunnel configuration for the public instance of my blog is [here](https://github.com/kdwils/homelab/blob/main/infra/cloudflared/configmap.yaml#L13-L14). The tl;dr is point the hostname to the envoy-gateway service.
 
-Once the `HTTPRoute` resources were created, I was able to resolve my blog at `blog.kyledev.co` and `blog.int.kyledev.co`.
-
+Once the `HTTPRoute` resources were created, I was able to resolve my blog at `blog.kyledev.co` and `blog.int.kyledev.co`
