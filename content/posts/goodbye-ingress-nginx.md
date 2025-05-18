@@ -127,14 +127,11 @@ This will point anything that matches the `*.int.kyledev.co` wildcard to the tai
 
 I then override DNS for the machines on the tailnet to point to my pihole server. As a bonus, I also get tailnet-wide benefits of using pihole as a DNS server.
 
-Next, I had 3 scenarios I wanted to cover:
+Next, I had 2 scenarios I wanted to cover:
 ```markdown
 1. Automatic certificates for my domains
-2. Allow HTTP + HTTPS traffic to *.kyledev.co
-3. Allow HTTPS traffic to *.int.kyledev.co
+2. Allow HTTP + HTTPS traffic to *.kyledev.co and *.int.kyledev.co
 ```
-
-Steps 2 and 3 are separate because I use different certificates for each scenario.
 
 ### Automatic certificates
 
@@ -233,7 +230,25 @@ spec:
 ```
 {{< /details >}}
 
-Now we can annotate the gateway with `cert-manager.io/cluster-issuer: letsencrypt-prod` to automatically provision certificates for us with an issuer of choice.
+Then you can can annotate the gateway with `cert-manager.io/cluster-issuer: <your-issuer-name>` to automatically provision certificates for us with an issuer of choice.
+
+Because I use multiple dns names, I created a certificate for the wildcard domain manually
+```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kyledev-wildcard-tls
+  namespace: envoy-gateway-system
+spec:
+  secretName: kyledev-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: "*.kyledev.co"
+  dnsNames:
+    - "*.kyledev.co"
+    - "*.int.kyledev.co"
+```
 
 ### Traffic Configuration
 
@@ -247,7 +262,9 @@ In my setup, I needed to create 3 listeners for the scenarios I outlined above.
 
 In both of these scenarios, I wanted to be able to create HTTPRoutes from any namespace, and let the gateway handle terminating TLS.
 
-The certificateRefs are the secrets that cert-manager will create for us. They do not need to exist beforehand. If you're not using cert-manager (or any other automation), you need to create the secrets manually.
+The certificateRefs are the secrets that cert-manager will create if you annotate the gateway with `cert-manager.io/cluster-issuer`.
+
+If you're not using cert-manager (or any other automation), you need to create the secrets manually like I did above.
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
@@ -255,8 +272,6 @@ kind: Gateway
 metadata:
   name: homelab
   namespace: envoy-gateway-system
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod # optional - if you're not using cert-manager you don't need this
 spec:
   gatewayClassName: envoy-gateway-class
   infrastructure:
@@ -283,19 +298,6 @@ spec:
         mode: Terminate
         certificateRefs:
           - name: kyledev-tls
-            kind: Secret
-            group: ""
-    - name: kyledev-int-https
-      protocol: HTTPS
-      port: 443
-      hostname: "*.int.kyledev.co"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: kyledev-int-tls
             kind: Secret
             group: ""
 ```
