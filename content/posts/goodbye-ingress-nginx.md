@@ -1,6 +1,6 @@
 +++
 author = "Kyle Wilson"
-title = "Goodbye beloved Ingress-nginx, hello Envoy gateway"
+title = "Goodbye beloved ingress-nginx controller"
 date = "2025-04-28"
 description = "The conversion from ingress-nginx controller to envoy gateway"
 summary = "How I converted all of my ingress traffic to the gateway api with Envoy"
