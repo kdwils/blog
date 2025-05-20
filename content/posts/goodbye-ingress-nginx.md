@@ -20,7 +20,7 @@ I've been using ingress-nginx for years now, and while I haven't had any complai
 
 Envoy Gateway is in the process of being adopted at my workplace, so I wanted to get familiar with it and have an environemnt for testing as well.
 
-Better now than never to cutover to the new kubernetes gateway API I suppose.
+Better now than later to cutover to the new kubernetes gateway API I suppose.
 
 ## Creating a gateway
 
