@@ -2,7 +2,7 @@
 author = "Kyle Wilson"
 title = "Goodbye beloved ingress-nginx controller"
 date = "2025-05-18"
-description = "The conversion from ingress-nginx controller to envoy gateway"
+description = "How I swapped to envoy gateway from ingress-nginx controller with the new Kuberenetes Gateway API"
 summary = "How I swapped to envoy gateway from ingress-nginx controller with the new Kuberenetes Gateway API"
 tags = [
     "Kubernetes",
@@ -254,11 +254,11 @@ spec:
 
 Each gateway can be configured with an array of listeners which allows fine grained control over the traffic that is routed to the gateway.
 
-In my setup, I needed to create 3 listeners for the scenarios I outlined above.
-
-`*.kyledev.co` needs to receive HTTP and HTTPS traffic with a specific certificate
-
-`*.int.kyledev.co` needs to receive HTTPS traffic with a specific certificate
+In my setup, I needed to create 2 listeners for the scenarios I outlined above.
+```markdown
+1. `*.kyledev.co` needs to receive HTTP and HTTPS traffic with a specific certificate
+2. `*.int.kyledev.co` needs to receive HTTPS traffic with a specific certificate
+```
 
 In both of these scenarios, I wanted to be able to create HTTPRoutes from any namespace, and let the gateway handle terminating TLS.
 
