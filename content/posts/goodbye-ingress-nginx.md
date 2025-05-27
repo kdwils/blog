@@ -24,7 +24,7 @@ Better now than later to cutover to the new kubernetes gateway API I suppose.
 
 ## Creating a gateway
 
-The documentation for installing envoy gateway is pretty starghtforward. The documentation is [here](https://gateway.envoyproxy.io/docs/tasks/quickstart/). You don't need install the gateway API CRDs separately, they are shipped with the manifest in the documetation.
+The documentation for installing envoy gateway is pretty starghtforward. The documentation is [here](https://gateway.envoyproxy.io/docs/tasks/quickstart/). You don't need install the gateway API CRDs separately, they are shipped with the manifest in the documentation.
 
 Assuming you have a working gateway controller deployed, we need to create a gateway class and gateway.
 
@@ -325,6 +325,6 @@ This blog is now exposed from my cluster using the gateway API. You can see the 
 - [dev](https://github.com/kdwils/blog/blob/dev/deploy/dev/httproute.yaml) internally used in my tailnet for testing purposes `blog.int.kyledev.co`
 - [prod](https://github.com/kdwils/blog/blob/prod/deploy/prod/httproute.yaml) for the "battle-tested" changes at `blog.kyledev.co`, which is what you're reading right now
 
-For some traffic I expose to the public internet, I use cloudflared to create a tunnel to my cluster. I did a previous post on that setup [here](/posts/cloudflare-tunnel). My tunnel configuration for the public instance of my blog is [here](https://github.com/kdwils/homelab/blob/main/infra/cloudflared/configmap.yaml#L13-L14). The tl;dr is point the hostname to the envoy-gateway service.
+For some traffic I expose to the public internet, I use cloudflared to create a tunnel to my cluster. I did a previous post on that setup [here](/posts/cloudflared-tunnel). My tunnel configuration for the public instance of my blog is [here](https://github.com/kdwils/homelab/blob/main/infra/cloudflared/configmap.yaml#L13-L14). The tl;dr is point the hostname to the envoy-gateway service.
 
 Once the `HTTPRoute` resources were created, I was able to resolve my blog at `blog.kyledev.co` and `blog.int.kyledev.co`
