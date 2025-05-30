@@ -682,7 +682,8 @@ spec:
 While CrowdSec is a dope open source project, there were some awkward aspects to the ecosystem that I encountered. This could be due to my lack of understanding of how the package is intended to be used so take these with a grain of salt.
 
 #### Ephemeral Challenges
-- Bouncers register as new bouncers on pod restarts.
+- Bouncers register as new instances on pod restarts.
+- Agents register as new machines on pod restarts.
 
 I think this happens as its "registering" as a new instance of the bouncer each time, and runs into naming conflicts.
 
