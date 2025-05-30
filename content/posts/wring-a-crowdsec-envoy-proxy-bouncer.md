@@ -2,8 +2,8 @@
 author = "Kyle Wilson"
 title = "Writing a CrowdSec Envoy Proxy Bouncer"
 date = "2023-02-23"
-description = "The process of writing a CrowdSec Envoy Proxy Bouncer for my homelab"
-summary = "This post will walk you through the process of writing a CrowdSec Envoy Proxy Bouncer for my homelab and how to set it up yourself."
+description = "Building a CrowdSec Bouncer for Envoy Proxy to protect Kubernetes services in my homelab"
+summary = "A detailed walkthrough of implementing a CrowdSec bouncer for Envoy porxy, including code examples and deployment configuration."
 tags = [
     "kubernetes",
     "crowdsec",
@@ -63,7 +63,11 @@ Some metrics from the envoy bouncer deployed in my cluster. Metrics are updated 
 ╰────────┴──────────┴──────────┴───────────┴────────╯
 ````
 
-* Warning: If you misconfigure this you will likely brick any connectivity that goes through the envoy gateway. You will need to delete the policy and probably restart the gateway pod.
+> ⚠️ **Warning**  
+> If you misconfigure this, you will likely lose connectivity through the Envoy Gateway. To recover:
+> 1. Delete the SecurityPolicy
+> 2. Restart the gateway pod if needed
+> 3. Verify your configuration before reapplying
 
 # What is crowdsec, and what does a bouncer do?
 
@@ -82,7 +86,7 @@ Got all of that? (It took me days of troubleshooting to put it all together beca
 
 [CrowdSec](https://www.crowdsec.net/) is a cloud-native security solution that aims to protect your infrastructure from bad actors or malicious attacks. 
 
-The LAPI (Local API) is a local API that allows you to interact with your local api instance. This service servces the puprose of managing your bouncers, machines, and communicating with CrowdSec remotely.
+The LAPI (Local API) is a local API that allows you to interact with your local api instance. This service serves the purpose of managing your bouncers, machines, and communicating with CrowdSec remotely.
 
 I deployed the LAPI to my cluster using their helm charts. You can see my manifests [here](https://github.com/kdwils/homelab/tree/main/monitoring/crowdsec). The installation instructions can be found [here](https://app.crowdsec.net/security-engines/setup?distribution=kubernetes).
 
@@ -597,7 +601,7 @@ var serveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		go bouncer.Sync(context.Background()) // sync from the lapi in the backround
+		go bouncer.Sync(context.Background()) // sync from the lapi in the background
 
 		ctx, cancel := context.WithCancel(context.Background())
 		server := server.NewServer(config, bouncer, logger)
