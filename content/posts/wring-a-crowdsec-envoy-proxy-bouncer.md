@@ -675,16 +675,15 @@ spec:
 
 # Closing Thoughts
 
-While CrowdSec is a dope open source project, there were some awkward aspects to the ecosystem that I encountered. This could be due to my lack of understanding of how the package is intended to be used.
+While CrowdSec is a dope open source project, there were some awkward aspects to the ecosystem that I encountered. This could be due to my lack of understanding of how the package is intended to be used so take these with a grain of salt.
 
-## Ephemeral Environment Challenges
-- Bouncers register as new instances on pod restarts
-- LAPI metrics become cluttered in Kubernetes environments
-- Difficult to track bouncer status across pod lifecycles
+#### Ephemeral Challenges
+- Bouncers register as new bouncers on pod restarts.
 
-## SDK Improvements Needed
+I think this happens as its "registering" as a new instance of the bouncer each time, and runs into naming conflicts.
+
+#### GO SDK Improvements
 - Better documentation for metrics integration
-- Simplified API for common use cases
 - More streamlined metrics exposure
 
 I am hoping to contribute to the ecosystem to improve the experience for others, and I definitely intend to keep using it in my homelab.
