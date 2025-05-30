@@ -183,6 +183,8 @@ cscli metrics
 
 # Writing a CrowdSec Envoy Proxy Bouncer
 
+I didn't see anything available for adding a bouncer to envoy proxy, and I thought this would be a fun project to take on, so here we are.
+
 Our bouncer needs to know how to extract the actual client ip from an incoming request, and then query the LAPI to see if the ip is banned or not. If it is, we need to deny the request by returning a forbidden status.
 
 Envoy already has a [go control plane](https://github.com/envoyproxy/go-control-plane) written, we can reference it in our bouncer for the gRPC calls between envoy-proxy and our service.
