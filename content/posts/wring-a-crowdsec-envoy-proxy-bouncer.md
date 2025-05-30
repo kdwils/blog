@@ -16,10 +16,14 @@ tags = [
 +++
 
 # Tl;DR
-For those that want to skip the reading and deploy the bouncer, here is the [source code](https://github.com/kdwils/envoy-proxy-crowdsec-bouncer). It is still a work in progress, but it is functional. Use it at your own risk.
+For those that want to skip the reading and deploy the bouncer, here is the [source code](https://github.com/kdwils/envoy-proxy-crowdsec-bouncer). It is still a work in progress, but it is functional.
 
 > ⚠️ **Warning**  
-> If you misconfigure this, you will likely lose connectivity through the Envoy Gateway. To recover:
+> This bouncer is a work in progress. Use it at your own risk.
+>
+> If you misconfigure this, you will likely lose connectivity through the Envoy Gateway. 
+>
+> To recover:
 > 1. Delete the SecurityPolicy
 > 2. Restart the gateway pod if needed
 > 3. Verify your configuration before reapplying
@@ -109,7 +113,7 @@ To list your connected machines, you can run the following command. If you only 
 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
-### Adding a machine
+## Adding a machine
 
 The VPS listed here is an oracle cloud instance. I use it as an ingress point for exposing things like Plex. Because this machine is exposed to the public internet it is a good candidate for installing crowdsec.
 
