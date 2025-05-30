@@ -18,9 +18,15 @@ tags = [
 # Tl;DR
 For those that want to skip the reading and deploy the bouncer, here is the [source code](https://github.com/kdwils/envoy-proxy-crowdsec-bouncer). It is still a work in progress, but it is functional. Use it at your own risk.
 
-It takes advantage of [crowdsec's bouncer pkg](https://github.com/crowdsecurity/go-cs-bouncer) and envoy proxy's [control plane pkg](https://github.com/envoyproxy/go-control-plane) to create a simple envoy proxy bouncer.
+> ⚠️ **Warning**  
+> If you misconfigure this, you will likely lose connectivity through the Envoy Gateway. To recover:
+> 1. Delete the SecurityPolicy
+> 2. Restart the gateway pod if needed
+> 3. Verify your configuration before reapplying
 
-The bouncer works as an ext authz filter for envoy-gateway. I appl a security policy to the gateway to point it to the bouncer for all requests.
+It takes advantage of [crowdsec's bouncer package](https://github.com/crowdsecurity/go-cs-bouncer) and envoy proxy's [control plane package](https://github.com/envoyproxy/go-control-plane) to create a simple envoy proxy bouncer.
+
+The bouncer works as an ext authz filter for envoy-gateway. I apply a security policy to the gateway to point it to the bouncer for all requests.
 
 {{< details "policy.yaml" >}}
 ```yaml
@@ -65,23 +71,21 @@ Some metrics from the envoy bouncer deployed in my cluster. Metrics are updated 
 ╰────────┴──────────┴──────────┴───────────┴────────╯
 ````
 
-> ⚠️ **Warning**  
-> If you misconfigure this, you will likely lose connectivity through the Envoy Gateway. To recover:
-> 1. Delete the SecurityPolicy
-> 2. Restart the gateway pod if needed
-> 3. Verify your configuration before reapplying
-
 # What is crowdsec, and what does a bouncer do?
 
-[CrowdSec](https://www.crowdsec.net/) is a cloud-native security solution that aims to protect your infrastructure from bad actors or malicious attacks. 
+[CrowdSec](https://www.crowdsec.net/) is a cloud-native security solution that aims to protect your infrastructure from bad actors or malicious attacks.
 
-There are a few components that come together to make the solution work.
+## Key Components
 
-- LAPI is a local API that allows you to interact with your local crowdsec instance
-- [Log Parsers](https://docs.crowdsec.net/docs/parsers/intro/) parse logs and feeds them into scenarios
-- Scenarios are a collection of [rules](https://docs.crowdsec.net/docs/scenarios/intro/) that are evaluated against the logs. A scenario that is triggered sends an alert to the LAPI.
-- A decision is made on whether to ban or not ban an ip
-- A bouncer acts on a decision and allows/denies the request
+There are several components that work together:
+
+- **LAPI** (Local API): Allows interaction with your local CrowdSec instance
+- **Log Parsers**: Parse logs and feed them into scenarios
+- **Scenarios**: Collections of rules evaluated against logs
+- **Decisions**: Determinations on whether to ban IPs
+- **Bouncers**: Components that act on decisions to allow/deny requests 
+
+<br>
 
 The LAPI (Local API) is a local API that allows you to interact with your local api instance. This service serves the purpose of managing your bouncers, machines, and communicating with CrowdSec remotely.
 
@@ -130,7 +134,7 @@ For the VPS, I added crowdsec's official firewall bouncer for nftables
 apt install crowdsec-firewall-bouncer-nftables
 ```
 
-From the pod use `cscli` add the bouncer and grab the token output. The cli should already be set up n the container.
+From the pod use `cscli` add the bouncer and grab the token output. The cli should already be set up in the container.
 ```shell
 crowdsec-lapi-6c6679c847-v2vbn:/# cscli bouncers add vps-firewall
 ```
@@ -175,13 +179,13 @@ cscli metrics
 
 # Writing a CrowdSec Envoy Proxy Bouncer
 
-Our bouncer needs to know how to extract the actual client ip from an incoming request, and then query the LAPI to see if the ip is banned or not. If it is, we need to deny the request by returning a forbiden status.
+Our bouncer needs to know how to extract the actual client ip from an incoming request, and then query the LAPI to see if the ip is banned or not. If it is, we need to deny the request by returning a forbidden status.
 
 Envoy already has a [go control plane](https://github.com/envoyproxy/go-control-plane) written, we can reference it in our bouncer for the gRPC calls between envoy-proxy and our service.
 
 To start, we need to set up a gRPC server that will handle the requests from Envoy that implements the [envoy_authz.CheckRequest](https://github.com/envoyproxy/go-control-plane/tree/main/envoy/service/auth/v3) service.
 
-Here is a graceful implementation of the server that I wrote for this project
+Here's a graceful implementation of the server:
 ```go
 package server
 
@@ -669,16 +673,18 @@ spec:
 ```
 {{< /details >}}
 
-# Closing thoughts
+# Closing Thoughts
 
-The ecosystem for crowdsec works, but it is a little rough around the edges. There is more to be desired with the agents and bouncers that are used in ephemeral environments - ie pods in a kubernetes cluster. The bouncers seem to register as a new bouncer each time a pod restarts which clutters the LAPI metrics and makes it hard to see what is going on.
+While CrowdSec is a dope open source project, there were some awkward aspects to the ecosystem that I encountered. This could be due to my lack of understanding of how the package is intended to be used.
 
-I also believe that some improvements go csbouncer pkg to make usage a little easier could result in more community contributions for bouncers.
+## Ephemeral Environment Challenges
+- Bouncers register as new instances on pod restarts
+- LAPI metrics become cluttered in Kubernetes environments
+- Difficult to track bouncer status across pod lifecycles
 
-I had trouble determining how to create metrics for the bounce in LAPI because I had to read the source code of the go kg.. Additionally, the metrics provider is a little awkward because it requires a logrus logger to be passed in when created.
+## SDK Improvements Needed
+- Better documentation for metrics integration
+- Simplified API for common use cases
+- More streamlined metrics exposure
 
-I'm not sure that the expectation is users should consume the metrics provider, but I think it would be nice to have a way to expose metrics for the LAPI that is a little more streamlined.
-
-Some of these issues I experienced are likely due to my lack of understanding of the how the package is supposed to be used. This isn't intended as a dig at the CrowdSec project in any way. These are only my thoughts after trying out the package. In the future, I may try to contribute to the project to improve the experience for others.
-
-Overall, this is a sick open-source project and I plan to continue using it.a
+I am hoping to contribute to the ecosystem to improve the experience for others, and I definitely intend to keep using it in my homelab.
