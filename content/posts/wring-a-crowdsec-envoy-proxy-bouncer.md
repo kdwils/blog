@@ -71,7 +71,7 @@ Some metrics from the envoy bouncer deployed in my cluster. Metrics are updated 
 │ Origin │             requests            │ unique │
 │        │  bounced │  cached  │ processed │   ips  │
 ├────────┼──────────┼──────────┼───────────┼────────┤
-│  Total │        7 │      399 │       525 │    103 │
+│  Total │        5 │      434 │       493 │     54 │
 ╰────────┴──────────┴──────────┴───────────┴────────╯
 ````
 
