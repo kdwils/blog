@@ -514,7 +514,7 @@ func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string
 
 	decision, ok := b.cache.Get(ip)
 	if !ok {
-		return true, nil
+		return false, nil
 	}
 	if IsBannedDecision(&decision) {
 		return true, nil
