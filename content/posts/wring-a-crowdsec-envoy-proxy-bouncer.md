@@ -95,7 +95,7 @@ The LAPI (Local API) is a local API that allows you to interact with your local 
 
 I deployed the LAPI to my cluster using their helm charts. You can see my manifests [here](https://github.com/kdwils/homelab/tree/main/monitoring/crowdsec). The installation instructions can be found [here](https://app.crowdsec.net/security-engines/setup?distribution=kubernetes).
 
-Basically, you deploy the LAPI with an enrollment key and the approve it on the dashboard afterwards.
+Basically, you deploy the LAPI with an enrollment key and then approve it on the dashboard afterwards.
 
 After this is deployed and running you can interact with the LAPI using the `cscli` on the pod.
 
@@ -308,7 +308,7 @@ type EnvoyBouncer struct {
 ```
 <br>
 
-The StreamBouncer creates a long running connection to the LAPI that will be streamed updates from the LAPI on new ips being added/removed from the ban list. The job of the stream client is to populate th cache with decisions for ip addresses. It will live in a go routine later.
+The StreamBouncer creates a long running connection to the LAPI that will be streamed updates from the LAPI on new ips being added/removed from the ban list. The job of the stream client is to populate the cache with decisions for ip addresses. It will live in a go routine later.
 
 <br>
 
@@ -535,8 +535,8 @@ The bouncer uses cobra to create a CLI and viper to manage configurations. Here 
 
 {{< details "serve.go" >}}
 ```go
-// serveCmd represents the serve command
-var serveCmd = &cobra.Command{
+// ServeCmd represents the serve command
+var ServeCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "serve the envoy gateway bouncer",
 	Long:  `serve the envoy gateway bouncer`,
@@ -550,26 +550,32 @@ var serveCmd = &cobra.Command{
 		level := logger.LevelFromString(config.Server.LogLevel)
 
 		handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
-		logger := slog.New(handler)
+		slogger := slog.New(handler)
+		slogger.Info("starting envoy-proxy-bouncer", "version", version.Version, "logLevel", level)
+		ctx := logger.WithContext(context.Background(), slogger)
 
-		logger.Info("starting envoy-proxy-bouncer", "version", version.Version, "logLevel", level)
-
-		cache := cache.New(config.Cache.Ttl, config.Cache.MaxEntries)
-		go cache.Cleanup() // clean up expired entries in the background
-
-		bouncer, err := bouncer.NewEnvoyBouncer(config.Bouncer.ApiKey, config.Bouncer.ApiURL, config.Bouncer.TrustedProxies, cache)
+		bouncer, err := bouncer.NewEnvoyBouncer(config.Bouncer.ApiKey, config.Bouncer.ApiURL, config.Bouncer.TickerInterval, config.Bouncer.TrustedProxies)
 		if err != nil {
 			return err
 		}
-		go bouncer.Sync(context.Background()) // sync from the lapi in the background
+		go bouncer.Sync(ctx)
 
-		ctx, cancel := context.WithCancel(context.Background())
-		server := server.NewServer(config, bouncer, logger)
+		if config.Bouncer.Metrics {
+			slogger.Info("metrics enabled, starting bouncer metrics")
+			go func() {
+				if err := bouncer.Metrics(ctx); err != nil {
+					slogger.Error("metrics error", "error", err)
+				}
+			}()
+		}
+
+		ctx, cancel := context.WithCancel(ctx)
+		server := server.NewServer(config, bouncer, slogger)
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
 			sig := <-sigCh
-			logger.Info("received signal", "signal", sig)
+			slogger.Info("received signal", "signal", sig)
 			cancel()
 		}()
 
@@ -622,7 +628,7 @@ While CrowdSec is a dope open source project, there were some awkward aspects to
 - [Bouncers register as new instances on pod restarts](https://github.com/crowdsecurity/crowdsec/issues/3663).
 - Agents register as new machines on pod restarts.
 
-I think this happens as its "registering" as a new instance of the bouncer each time, and runs into naming conflicts.
+I think this happens as its "re-registering" as a new instance of the bouncer each time, and runs into naming conflicts.
 
 #### GO SDK Improvements
 - Better documentation for metrics integration
