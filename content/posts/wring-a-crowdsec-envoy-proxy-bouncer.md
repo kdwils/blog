@@ -299,33 +299,14 @@ import (
 
 type EnvoyBouncer struct {
 	stream          *csbouncer.StreamBouncer
-	bouncer         LiveBouncerClient
 	trustedProxies  []*net.IPNet
 	cache           *cache.Cache
+	mu              *sync.RWMutex
 }
 ```
-
-The bouncer LiveBouncerClient is the client we will use to make individual requests to the LAPI to check if the ip is banned or not if we haven't already cached the ip result.
-
-In this case, we made an interface that wraps the `csbouncer.LiveBouncerClient` to make it easier to unit test. We can generate mocks for testing using `go.uber.org/mock/gomock`.
-
-```go
-//go:generate mockgen -destination=mocks/mock_bouncer_client.go -package=mocks github.com/kdwils/envoy-proxy-bouncer/bouncer LiveBouncerClient
-type LiveBouncerClient interface {
-	Init() error
-	Get(string) (*models.GetDecisionsResponse, error)
-}
-```
-
-To generate mocks (assuming mockgen is [installed](https://github.com/uber-go/mock)), we need to run `go generate`
-
-```shell
-go generate ./...
-```
-
 <br>
 
-The StreamBouncer creates a long running connection to the LAPI that will be streamed updates from the LAPI on new ips being added/removed from the ban list. It will live in a go routine later.
+The StreamBouncer creates a long running connection to the LAPI that will be streamed updates from the LAPI on new ips being added/removed from the ban list. The job of the stream client is to populate th cache with decisions for ip addresses. It will live in a go routine later.
 
 Our bouncer needs to know the following to function properly:
 - The source ip of the request
@@ -409,38 +390,27 @@ package cache
 
 import (
 	"sync"
-	"time"
+
+	"github.com/crowdsecurity/crowdsec/pkg/models"
 )
 
 type Cache struct {
-	entries map[string]Entry
-	ttl     time.Duration
+	entries map[string]models.Decision
 	mu      sync.RWMutex
-	maxSize int
 }
 
-type Entry struct {
-	Bounced   bool
-	ExpiresAt time.Time
-}
-
-func New(ttl time.Duration, maxSize int) *Cache {
+func New() *Cache {
 	return &Cache{
-		ttl:     ttl,
 		mu:      sync.RWMutex{},
-		entries: make(map[string]Entry),
-		maxSize: maxSize,
+		entries: make(map[string]models.Decision),
 	}
 }
 
-func (c *Cache) Set(ip string, bounced bool) {
+func (c *Cache) Set(ip string, d models.Decision) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.entries[ip] = Entry{
-		Bounced:   bounced,
-		ExpiresAt: time.Now().Add(c.ttl),
-	}
+	c.entries[ip] = d
 }
 
 func (c *Cache) Delete(ip string) {
@@ -449,22 +419,10 @@ func (c *Cache) Delete(ip string) {
 	delete(c.entries, ip)
 }
 
-func (c *Cache) Get(ip string) (Entry, bool) {
+func (c *Cache) Get(ip string) (models.Decision, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	var entry Entry
-	var ok bool
-
-	entry, ok = c.entries[ip]
-	if !ok {
-		return entry, false
-	}
-
-	if entry.Expired() {
-		delete(c.entries, ip)
-		return entry, false
-	}
-
+	entry, ok := c.entries[ip]
 	return entry, ok
 }
 
@@ -473,35 +431,13 @@ func (c *Cache) Size() int {
 	defer c.mu.RUnlock()
 	return len(c.entries)
 }
-
-func (c *Cache) Cleanup() {
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			c.mu.Lock()
-			for ip, entry := range c.entries {
-				if entry.Expired() {
-					delete(c.entries, ip)
-				}
-			}
-			c.mu.Unlock()
-		}
-	}
-}
-
-func (e Entry) Expired() bool {
-	return time.Now().After(e.ExpiresAt)
-}
 ```
 {{< /details >}}
 
-The rest of the bouncer logic is pretty straightforward. We check if the ip is in the cache, and if it is, we return the cached result. Otherwise, we make a call to the LAPI to check if the ip is banned or not, and then cache the result.
+The rest of the bouncer logic is pretty straightforward. We check if the ip is in the cache, and if it is, we return the cached result. Otherwise, we can assume the ip is not banned and may continue on.
 
 {{< details "bouncer.go" >}}
 ```go
-func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string]string) (bool, error) {
 	logger := logger.FromContext(ctx).With(slog.String("method", "bounce"))
 	if ip == "" {
 		logger.Debug("no ip provided")
@@ -535,24 +471,11 @@ func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string
 		for i := len(ips) - 1; i >= 0; i-- {
 			parsedIP := strings.TrimSpace(ips[i])
 			if !b.isTrustedProxy(parsedIP) && isValidIP(parsedIP) {
-				logger.Info("using ip from xff header", "ip", parsedIP)
+				logger.Debug("using ip from xff header", "ip", parsedIP)
 				ip = parsedIP
 				break
 			}
 		}
-	}
-
-	logger = logger.With(slog.String("ip", ip))
-	logger.Debug("starting decision check")
-
-	entry, ok := b.cache.Get(ip)
-	if ok {
-		logger.Debug("cache hit", "entry", entry)
-		if entry.Bounced {
-			logger.Debug("ip already bounced")
-			return true, nil
-		}
-		return entry.Bounced, nil
 	}
 
 	if !isValidIP(ip) {
@@ -560,43 +483,84 @@ func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string
 		return false, errors.New("invalid ip address")
 	}
 
-	decisions, err := b.getDecision(ip)
-	if err != nil {
-		logger.Error("error getting decisions", "error", err)
-		return false, err
+	logger = logger.With(slog.String("ip", ip), slog.String("xff", xff))
+	logger.Debug("starting decision check")
+
+	decision, ok := b.cache.Get(ip)
+	if !ok {
+		logger.Debug("not found in cache", "ip", ip)
+		logger.Info("ok")
 	}
-	if decisions == nil {
-		logger.Debug("no decisions found for ip")
-		b.cache.Set(ip, false)
-		return false, nil
+	if IsBannedDecision(&decision) {
+		logger.Info("bouncing")
+		return true, nil
 	}
 
-	for _, decision := range *decisions {
-		if decision.Value == nil || decision.Type == nil {
-			logger.Warn("decision has nil value or type", "decision", decision)
-			continue
-		}
-		if isBannedDecision(decision) {
-			logger.Info("bouncing")
-			b.cache.Set(ip, true)
-			return true, nil
-		}
-	}
-
-	b.cache.Set(ip, false)
 	logger.Debug("no ban decisions found")
+	logger.Info("ok")
 	return false, nil
 }
 
-func isBannedDecision(decision *models.Decision) bool {
-	return decision != nil && decision.Type != nil && strings.EqualFold(*decision.Type, "ban")
+func IsBannedDecision(decision *models.Decision) bool {
+	if decision == nil || decision.Type == nil {
+		return false
+	}
+	return strings.EqualFold(*decision.Type, "ban")
 }
 ```
 {{< /details >}}
 
 <br>
 
-The bouncer uses cobra to create a CLI and viper to manage configurations. Here is the command that ties it all together.
+Next, we need to implement the a go routine that will sync the cache with the LAPI. This is where the StreamBouncer comes in.
+
+We get updates for an ip address when a new decision is added or an old decision is deleted.
+
+{{< details "sync.go" >}}
+```go
+func (b *EnvoyBouncer) Sync(ctx context.Context) error {
+	if b.stream == nil {
+		return errors.New("stream not initialized")
+	}
+
+	logger := logger.FromContext(ctx).With(slog.String("method", "sync"))
+	go func() {
+		b.stream.Run(ctx)
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Debug("sync context done")
+			return nil
+		case d := <-b.stream.Stream:
+			if d == nil {
+				logger.Debug("received nil decision stream")
+				continue
+			}
+
+			for _, decision := range d.Deleted {
+				if decision == nil || decision.Value == nil {
+					continue
+				}
+				logger.Debug("deleting decision", "decision", decision)
+				b.cache.Delete(*decision.Value)
+			}
+
+			for _, decision := range d.New {
+				if decision == nil || decision.Value == nil {
+					continue
+				}
+				logger.Debug("received new decision", "decision", decision)
+				b.cache.Set(*decision.Value, *decision)
+			}
+		}
+	}
+}
+```
+{{< /details >}}
+
+The bouncer uses cobra to create a CLI and viper to manage configurations. Here is the command that ties it all together and serves the grpc api.
 
 {{< details "serve.go" >}}
 ```go
