@@ -192,6 +192,7 @@ Envoy already has a [go control plane](https://github.com/envoyproxy/go-control-
 To start, we need to set up a gRPC server that will handle the requests from Envoy that implements the [envoy_authz.CheckRequest](https://github.com/envoyproxy/go-control-plane/tree/main/envoy/service/auth/v3) service.
 
 Here's a graceful implementation of the server:
+{{< details "server.go" >}}
 ```go
 package server
 
@@ -248,6 +249,7 @@ func (s *Server) Serve(ctx context.Context, port int) error {
 	return grpcServer.Serve(lis)
 }
 ```
+{{< /details >}}
 
 Next the server needs to implement the `CheckRequest` method
 
@@ -308,84 +310,12 @@ type EnvoyBouncer struct {
 
 The StreamBouncer creates a long running connection to the LAPI that will be streamed updates from the LAPI on new ips being added/removed from the ban list. The job of the stream client is to populate th cache with decisions for ip addresses. It will live in a go routine later.
 
-Our bouncer needs to know the following to function properly:
-- The source ip of the request
-- The headers of the request
+<br>
 
-So, our method receiver then looks like
-```go
-func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string]string) (bool, error)
-```
+First, we need to implement a cache to store the decisions we get from the LAPI. We create a simple in-memory cache to store the results of the LAPI calls that is go-routine safe.
 
-The boolean returned tells us whether to bounce the request or not.
-
-The first thing we need to do is determine the actual client ip making the request. We need to respect the `x-forwarded-for` header if it exists. We also need a way for users to specify trusted proxies that are allowed to bypass the bouncer. These ips that are trusted are skipped when determining the client ip.
-{{< details "partial-bouncer.go" >}}
-```go
-func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string]string) (bool, error) {
-	logger := logger.FromContext(ctx).With(slog.String("method", "bounce"))
-	if ip == "" {
-		logger.Debug("no ip provided")
-		return false, errors.New("no ip found")
-	}
-
-	if b.cache == nil {
-		logger.Debug("cache is nil")
-		return false, errors.New("cache is nil")
-	}
-
-	var xff string
-	for k, v := range headers {
-		if strings.EqualFold(k, "x-forwarded-for") {
-			xff = v
-			break
-		}
-	}
-	if xff != "" {
-		logger.Debug("found xff header", "xff", xff)
-		if len(xff) > maxHeaderLength {
-			logger.Warn("xff header too big", "length", len(xff))
-			return false, errors.New("header too big")
-		}
-		ips := strings.Split(xff, ",")
-		if len(ips) > maxIPs {
-			logger.Warn("too many ips in xff header", "length", len(ips))
-			return false, errors.New("too many ips in chain")
-		}
-
-		for i := len(ips) - 1; i >= 0; i-- {
-			parsedIP := strings.TrimSpace(ips[i])
-			if !b.isTrustedProxy(parsedIP) && isValidIP(parsedIP) {
-				logger.Info("using ip from xff header", "ip", parsedIP)
-				ip = parsedIP
-				break
-			}
-		}
-	}
-}
-
-func (b *EnvoyBouncer) isTrustedProxy(ip string) bool {
-	parsed := net.ParseIP(ip)
-	if parsed == nil {
-		return false
-	}
-	for _, ipNet := range b.trustedProxies {
-		if ipNet.Contains(parsed) {
-			return true
-		}
-	}
-	return false
-}
-```
-{{< /details >}}
-
-We traverse the list of ips from right to left, and check if the ip is in one of the trusted proxies cidr range. If not, we need to check if the ip is valid.
-
-Because it is unlikely the state of the ip will change, we cache the result of the LAPI call we are about to make. Without the cache we would need to make a call to the LAPI for every request, and that will cause a ton of latency if done for each request.
-
-We create a simple in-memory cache to store the results of the LAPI calls that is go-routine safe. The key for each entry is the ip of the request, and the value is the result of the LAPI call.
 {{< details "cache.go" >}}
-```golang
+```go
 package cache
 
 import (
@@ -432,85 +362,6 @@ func (c *Cache) Size() int {
 	return len(c.entries)
 }
 ```
-{{< /details >}}
-
-The rest of the bouncer logic is pretty straightforward. We check if the ip is in the cache, and if it is, we return the cached result. Otherwise, we can assume the ip is not banned and may continue on.
-
-{{< details "bouncer.go" >}}
-```go
-	logger := logger.FromContext(ctx).With(slog.String("method", "bounce"))
-	if ip == "" {
-		logger.Debug("no ip provided")
-		return false, errors.New("no ip found")
-	}
-
-	if b.cache == nil {
-		logger.Debug("cache is nil")
-		return false, errors.New("cache is nil")
-	}
-
-	var xff string
-	for k, v := range headers {
-		if strings.EqualFold(k, "x-forwarded-for") {
-			xff = v
-			break
-		}
-	}
-	if xff != "" {
-		logger.Debug("found xff header", "xff", xff)
-		if len(xff) > maxHeaderLength {
-			logger.Warn("xff header too big", "length", len(xff))
-			return false, errors.New("header too big")
-		}
-		ips := strings.Split(xff, ",")
-		if len(ips) > maxIPs {
-			logger.Warn("too many ips in xff header", "length", len(ips))
-			return false, errors.New("too many ips in chain")
-		}
-
-		for i := len(ips) - 1; i >= 0; i-- {
-			parsedIP := strings.TrimSpace(ips[i])
-			if !b.isTrustedProxy(parsedIP) && isValidIP(parsedIP) {
-				logger.Debug("using ip from xff header", "ip", parsedIP)
-				ip = parsedIP
-				break
-			}
-		}
-	}
-
-	if !isValidIP(ip) {
-		logger.Error("invalid ip address")
-		return false, errors.New("invalid ip address")
-	}
-
-	logger = logger.With(slog.String("ip", ip), slog.String("xff", xff))
-	logger.Debug("starting decision check")
-
-	decision, ok := b.cache.Get(ip)
-	if !ok {
-		logger.Debug("not found in cache", "ip", ip)
-		logger.Info("ok")
-	}
-	if IsBannedDecision(&decision) {
-		logger.Info("bouncing")
-		return true, nil
-	}
-
-	logger.Debug("no ban decisions found")
-	logger.Info("ok")
-	return false, nil
-}
-
-func IsBannedDecision(decision *models.Decision) bool {
-	if decision == nil || decision.Type == nil {
-		return false
-	}
-	return strings.EqualFold(*decision.Type, "ban")
-}
-```
-{{< /details >}}
-
-<br>
 
 Next, we need to implement the a go routine that will sync the cache with the LAPI. This is where the StreamBouncer comes in.
 
@@ -556,6 +407,126 @@ func (b *EnvoyBouncer) Sync(ctx context.Context) error {
 			}
 		}
 	}
+}
+```
+{{< /details >}}
+
+Then, we need to implement the logic to determine if the ip is banned or not.
+
+Our bouncer needs to know the following to function properly:
+- The source ip of the request
+- The headers of the request
+
+So, our method receiver then looks like
+```go
+func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string]string) (bool, error)
+```
+
+The boolean returned tells us whether to bounce the request or not.
+
+The first thing we need to do is determine the actual client ip making the request. We need to respect the `x-forwarded-for` header if it exists. We also need a way for users to specify trusted proxies that are allowed to bypass the bouncer. These ips that are trusted are skipped when determining the client ip.
+{{< details "partial-bouncer.go" >}}
+```go
+func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string]string) (bool, error) {
+	var xff string
+	for k, v := range headers {
+		if strings.EqualFold(k, "x-forwarded-for") {
+			xff = v
+			break
+		}
+	}
+	if xff != "" {
+		if len(xff) > maxHeaderLength {
+			return false, errors.New("header too big")
+		}
+		ips := strings.Split(xff, ",")
+		if len(ips) > maxIPs {
+			return false, errors.New("too many ips in chain")
+		}
+
+		for i := len(ips) - 1; i >= 0; i-- {
+			parsedIP := strings.TrimSpace(ips[i])
+			if !b.isTrustedProxy(parsedIP) && isValidIP(parsedIP) {
+				ip = parsedIP
+				break
+			}
+		}
+	}
+}
+
+func (b *EnvoyBouncer) isTrustedProxy(ip string) bool {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return false
+	}
+	for _, ipNet := range b.trustedProxies {
+		if ipNet.Contains(parsed) {
+			return true
+		}
+	}
+	return false
+}
+```
+{{< /details >}}
+
+We traverse the list of ips from right to left, and check if the ip is in one of the trusted proxies cidr range. If not, we need to check if the ip is valid.
+
+The rest of the bouncer logic is pretty straightforward. We check if the ip is in the cache, and if it is, we return the cached result. Otherwise, we can assume the ip is not banned and may continue on.
+
+{{< details "bouncer.go" >}}
+```go
+func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string]string) (bool, error){
+	if ip == "" {
+		return false, errors.New("no ip found")
+	}
+
+	if b.cache == nil {
+		return false, errors.New("cache is nil")
+	}
+
+	var xff string
+	for k, v := range headers {
+		if strings.EqualFold(k, "x-forwarded-for") {
+			xff = v
+			break
+		}
+	}
+	if xff != "" {
+		if len(xff) > maxHeaderLength {
+			return false, errors.New("header too big")
+		}
+		ips := strings.Split(xff, ",")
+		if len(ips) > maxIPs {
+			return false, errors.New("too many ips in chain")
+		}
+		for i := len(ips) - 1; i >= 0; i-- {
+			parsedIP := strings.TrimSpace(ips[i])
+			if !b.isTrustedProxy(parsedIP) && isValidIP(parsedIP) {
+				ip = parsedIP
+				break
+			}
+		}
+	}
+
+	if !isValidIP(ip) {
+		return false, errors.New("invalid ip address")
+	}
+
+	decision, ok := b.cache.Get(ip)
+	if !ok {
+		return true, nil
+	}
+	if IsBannedDecision(&decision) {
+		return true, nil
+	}
+	return false, nil
+}
+
+func IsBannedDecision(decision *models.Decision) bool {
+	if decision == nil || decision.Type == nil {
+		return false
+	}
+	return strings.EqualFold(*decision.Type, "ban")
 }
 ```
 {{< /details >}}
@@ -648,7 +619,7 @@ spec:
 While CrowdSec is a dope open source project, there were some awkward aspects to the ecosystem that I encountered. This could be due to my lack of understanding of how the package is intended to be used so take these with a grain of salt.
 
 #### Ephemeral Challenges
-- Bouncers register as new instances on pod restarts.
+- [Bouncers register as new instances on pod restarts](https://github.com/crowdsecurity/crowdsec/issues/3663).
 - Agents register as new machines on pod restarts.
 
 I think this happens as its "registering" as a new instance of the bouncer each time, and runs into naming conflicts.
