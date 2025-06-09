@@ -63,16 +63,15 @@ I'll probably get a more detailed writeup on deploying it in the future, but for
 
 Some metrics from the envoy bouncer deployed in my cluster. Metrics are updated every 15 minutes.
 ```shell
-╭───────────────────────────────────────────────────╮
-│ Bouncer Metrics (envoy-bouncer) since 2025-05-30  │
-│16:39:34 +0000                                     │
-│ UTC                                               │
-├────────┬─────────────────────────────────┬────────┤
-│ Origin │             requests            │ unique │
-│        │  bounced │  cached  │ processed │   ips  │
-├────────┼──────────┼──────────┼───────────┼────────┤
-│  Total │        5 │      434 │       493 │     54 │
-╰────────┴──────────┴──────────┴───────────┴────────╯
+╭────────────────────────────────────────╮
+│ Bouncer Metrics (envoy) si             │
+│ nce 2025-06-08 21:35:15 +0000 UTC      │
+├────────┬──────────────────────┬────────┤
+│ Origin │       requests       │ unique │
+│        │  bounced │ processed │   ips  │
+├────────┼──────────┼───────────┼────────┤
+│  Total │       22 │     8.08k │    480 │
+╰────────┴──────────┴───────────┴────────╯
 ````
 
 # What is crowdsec, and what does a bouncer do?
