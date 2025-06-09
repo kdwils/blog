@@ -361,6 +361,7 @@ func (c *Cache) Size() int {
 	return len(c.entries)
 }
 ```
+{{< /details >}}
 
 Next, we need to implement the a go routine that will sync the cache with the LAPI. This is where the StreamBouncer comes in.
 
@@ -583,13 +584,12 @@ var ServeCmd = &cobra.Command{
 	},
 }
 ```
+{{< /details >}}
 
 To start the server
 ```shell
 go run main.go serve
 ```
-
-{{< /details >}}
 
 # Deploying the bouncer
 I deployed the bouncer to my home kubernetes cluster. The manifest consists of a deployment, a service, and a configmap + secret to configure the bouncer. The full manifest is [here](https://github.com/kdwils/homelab/tree/main/monitoring/envoy-gateway-bouncer).
