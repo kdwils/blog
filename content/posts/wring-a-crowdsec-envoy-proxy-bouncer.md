@@ -522,6 +522,24 @@ func (b *EnvoyBouncer) Bounce(ctx context.Context, ip string, headers map[string
 	return false, nil
 }
 
+func (b *EnvoyBouncer) isTrustedProxy(ip string) bool {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return false
+	}
+	for _, ipNet := range b.trustedProxies {
+		if ipNet.Contains(parsed) {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidIP(ip string) bool {
+	parsedIP := net.ParseIP(ip)
+	return parsedIP != nil
+}
+
 func IsBannedDecision(decision *models.Decision) bool {
 	if decision == nil || decision.Type == nil {
 		return false
