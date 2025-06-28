@@ -5,8 +5,9 @@ resources:
   - httproute.yaml
   - blog.yaml
   - vpa.yaml
+  - project.yaml
 
 images:
   - name: blog
     newName: ghcr.io/kdwils/blog
-    newTag: main
+    newTag: sha-4386052465ccceaf0205190f4cf9472bf964714a

@@ -4,3 +4,4 @@ metadata:
   name: blog
   labels:
     kargo.akuity.io/project-namespace: "true"
+    kargo.akuity.io/project: blog

@@ -1,0 +1,68 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Project
+metadata:
+  name: blog
+  namespace: blog
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: ProjectConfig
+metadata:
+  name: blog
+  namespace: blog
+spec:
+  promotionPolicies:
+    - stageSelector:
+        name: dev
+      autoPromotionEnabled: true
+    - stageSelector:
+        name: prod
+      autoPromotionEnabled: false
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Warehouse
+metadata:
+  name: blog
+  namespace: blog
+spec:
+  subscriptions:
+    - git:
+        repoURL: https://github.com/kdwils/blog.git
+        branch: dev
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: dev
+  namespace: blog
+spec:
+  subscriptions:
+    warehouse: blog
+    git:
+      repoURL: https://github.com/kdwils/blog.git
+      branch: dev
+  promotionMechanisms:
+    argoCDAppUpdates:
+      - appName: blog-dev
+        sourceUpdates:
+          - repoURL: https://github.com/kdwils/blog.git
+            git:
+              branch: dev
+---
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: prod
+  namespace: blog
+spec:
+  subscriptions:
+    warehouse: blog
+    git:
+      repoURL: https://github.com/kdwils/blog.git
+      branch: prod
+  promotionMechanisms:
+    argoCDAppUpdates:
+      - appName: blog-prod
+        sourceUpdates:
+          - repoURL: https://github.com/kdwils/blog.git
+            git:
+              branch: prod
