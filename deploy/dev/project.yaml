@@ -22,8 +22,6 @@ metadata:
   name: dev
   namespace: blog
 spec:
-  upstreamStages:
-    - name: prod
   requestedFreight:
     - origin:
         kind: Warehouse
@@ -49,7 +47,8 @@ spec:
         kind: Warehouse
         name: blog
       sources:
-        direct: true
+        stages:
+          - dev
   promotionMechanisms:
     argoCDAppUpdates:
       - appName: blog-prod
