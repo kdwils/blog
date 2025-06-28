@@ -5,20 +5,6 @@ metadata:
   namespace: blog
 ---
 apiVersion: kargo.akuity.io/v1alpha1
-kind: ProjectConfig
-metadata:
-  name: blog
-  namespace: blog
-spec:
-  promotionPolicies:
-    - stageSelector:
-        name: dev
-      autoPromotionEnabled: true
-    - stageSelector:
-        name: prod
-      autoPromotionEnabled: false
----
-apiVersion: kargo.akuity.io/v1alpha1
 kind: Warehouse
 metadata:
   name: blog
