@@ -15,3 +15,8 @@ spec:
     - git:
         repoURL: https://github.com/kdwils/blog.git
         branch: main
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blog
