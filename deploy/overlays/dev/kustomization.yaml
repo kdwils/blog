@@ -2,11 +2,12 @@ kind: Kustomization
 apiVersion: kustomize.config.k8s.io/v1beta1
 
 resources:
-  - blog.yaml
+  - ../../base
+  - namespace.yaml
   - httproute.yaml
   - vpa.yaml
 
 images:
   - name: blog
     newName: ghcr.io/kdwils/blog
-    newTag: live
+    newTag: sha-4386052465ccceaf0205190f4cf9472bf964714a
