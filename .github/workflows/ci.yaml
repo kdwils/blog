@@ -13,3 +13,4 @@ jobs:
       image: kdwils/blog
       registry: ghcr.io
       platforms: linux/amd64,linux/arm64
+      version_file: version.txt
