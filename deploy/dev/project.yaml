@@ -14,10 +14,7 @@ spec:
   subscriptions:
     - git:
         repoURL: https://github.com/kdwils/blog.git
-        branch: dev
-    - git:
-        repoURL: https://github.com/kdwils/blog.git
-        branch: prod
+        branch: main
 ---
 apiVersion: kargo.akuity.io/v1alpha1
 kind: Stage
