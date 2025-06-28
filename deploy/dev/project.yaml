@@ -25,10 +25,12 @@ metadata:
   name: dev
   namespace: blog
 spec:
-  subscriptions:
-    warehouse:
-      name: blog
-      direct: true
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: blog
+      sources:
+        direct: true
   promotionMechanisms:
     argoCDAppUpdates:
       - appName: blog-dev
@@ -45,10 +47,12 @@ metadata:
 spec:
   upstreamStages:
     - name: dev
-  subscriptions:
-    warehouse:
-      name: blog
-      direct: true
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: blog
+      sources:
+        direct: true
   promotionMechanisms:
     argoCDAppUpdates:
       - appName: blog-prod
