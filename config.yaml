@@ -91,7 +91,6 @@ markup:
     anchorLineNos: true
     codeFences: true
     guessSyntax: false
-    # lineNos: true
     style: monokai-sublime
 
 privacy:
