@@ -9,4 +9,4 @@ resources:
 images:
   - name: blog
     newName: ghcr.io/kdwils/blog
-    newTag: sha256:d11cd40516d59c6534974b40521f5ca18c963cf21409207a3621c4af1a46bcfe
+    newTag: sha-4386052465ccceaf0205190f4cf9472bf964714a
