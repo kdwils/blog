@@ -6,7 +6,7 @@ resources:
   - httproute.yaml
   - blog.yaml
   - vpa.yaml
-  - project.yaml
+  - stage.yaml
 
 images:
   - name: blog

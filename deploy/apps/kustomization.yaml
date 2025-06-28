@@ -1,3 +1,4 @@
 resources:
   - dev.yaml
   - prod.yaml
+  - kargo.yaml

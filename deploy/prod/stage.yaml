@@ -1,0 +1,20 @@
+apiVersion: kargo.akuity.io/v1alpha1
+kind: Stage
+metadata:
+  name: prod
+  namespace: blog
+spec:
+  requestedFreight:
+    - origin:
+        kind: Warehouse
+        name: blog
+      sources:
+        stages:
+          - dev
+  promotionMechanisms:
+    argoCDAppUpdates:
+      - appName: blog-prod
+        sourceUpdates:
+          - repoURL: https://github.com/kdwils/blog.git
+            git:
+              branch: prod
