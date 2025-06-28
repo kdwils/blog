@@ -1,3 +1,4 @@
 resources:
+  - project.yaml
   - dev.yaml
   - prod.yaml
