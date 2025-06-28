@@ -22,6 +22,8 @@ metadata:
   name: dev
   namespace: blog
 spec:
+  upstreamStages:
+    - name: prod
   requestedFreight:
     - origin:
         kind: Warehouse
@@ -42,8 +44,6 @@ metadata:
   name: prod
   namespace: blog
 spec:
-  upstreamStages:
-    - name: dev
   requestedFreight:
     - origin:
         kind: Warehouse
