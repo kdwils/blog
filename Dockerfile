@@ -1,10 +1,14 @@
 FROM alpine:latest AS builder
 
-RUN apk add --no-cache wget
+ARG HUGO_VERSION=0.151.0
+ARG TARGETARCH
 
-RUN wget -O /tmp/hugo.tar.gz https://github.com/gohugoio/hugo/releases/download/v0.148.2/hugo_0.148.2_linux-amd64.tar.gz && \
-    tar -xf /tmp/hugo.tar.gz -C /usr/local/bin/ && \
-    rm /tmp/hugo.tar.gz
+RUN apk add --no-cache ca-certificates && \
+    ARCH=${TARGETARCH:-amd64} && \
+    wget -O hugo.tar.gz "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_${HUGO_VERSION}_linux-${ARCH}.tar.gz" && \
+    tar -xzf hugo.tar.gz hugo && \
+    mv hugo /usr/local/bin/ && \
+    rm hugo.tar.gz
 
 WORKDIR /src
 COPY . .
