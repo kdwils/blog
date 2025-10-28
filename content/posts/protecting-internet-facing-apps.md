@@ -1,7 +1,7 @@
 +++
 author = "Kyle Wilson"
 title = "How I protect applications I expose to the public internet in Kubernetes with CrowdSec"
-date = "2025-10-25"
+date = "2025-10-28"
 description = ""
 summary = ""
 tags = [
