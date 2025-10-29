@@ -7,7 +7,6 @@ summary = "A detailed walkthrough of implementing a CrowdSec bouncer for Envoy p
 tags = [
     "kubernetes",
     "crowdsec",
-    "envoy-proxy",
     "envoy-gateway",
     "homelab",
     "golang",
