@@ -1,9 +1,9 @@
 +++
 author = "Kyle Wilson"
-title = "How I protect applications I expose to the public internet in Kubernetes with CrowdSec"
+title = "How I protect Kubernetes services with CrowdSec"
 date = "2025-10-28"
-description = ""
-summary = ""
+description = "A high-level overview of protecting Kubernetes services using CrowdSec, Envoy Gateway, Cloudflared Tunnel, and a custom Envoy Proxy Bouncer to detect and block malicious traffic."
+summary = "Learn how to protect internet-facing Kubernetes applications by combining CrowdSec's threat intelligence with Envoy Gateway's external authorization. This setup enables automatic blocking of malicious IPs and virtual patching of vulnerabilities without modifying application code."
 tags = [
     "homelab",
     "crowdsec",
@@ -11,51 +11,60 @@ tags = [
 ]
 +++
 
-## The pieces
+## Fear of the Unknown
 
-In my last two blog posts I covered the envoy-proxy remediation component I wrote for crowdsec. Those topics were focused on the bouncer functionality, and I wanted to cover the pieces outside of the bouncer that when put together make the entire process work.
+Exposing applications to the internet is risky, and I wanted to have *some* insight into who is making requests and what they are requesting.
 
-Basically, it all boils down to Cloudflared Tunnels, Cached IP decisions from crowdsec, and Envoy Gateway.
+After discovering CrowdSec, I realized there was an opportunity to write a remediation component for Envoy Proxy since one didn't exist yet.
 
-### Cloudflared Tunnels
+In my last two blog posts, I covered the [`envoy-proxy` remediation component](https://github.com/kdwils/envoy-proxy-crowdsec-bouncer) I wrote. Those posts focused on the bouncer functionality, and in this post I want to cover the other pieces that come together to make the entire process work.
 
-Cloudflared Tunnels act as a "safer" ingress for services in my Kubernetes cluster. I won't go over the details of setting up Cloudflared in this post, but I've covered it in a [previous post](/posts/cloudflare-tunnel)
+## The Components
 
-The tl;dr is we need to tell the tunnel to route traffic to Envoy Gateway. I am choosing to terminate TLS at the gateway and I need to make sure SNI will work for my wildcard certificate.
+The solution combines three main components: Cloudflared Tunnel, CrowdSec, and Envoy Gateway.
+
+The logic in the remediation component is straightforward: parse the real IP of the request, check the decision cache, and apply the decision if one exists (block the request or serve a captcha).
+
+### Cloudflared Tunnel
+
+Cloudflared Tunnel acts as a safe ingress for services in my Kubernetes cluster. I won't go over the details of setting up Cloudflared in this post as I've already covered it in a [previous post](/posts/cloudflare-tunnel). My setup has changed since then, but the core concept remains the same.
+
+The tunnel allows me to keep my IP private since users only see a Cloudflare IP. I also don't have to configure port forwarding on my router.
+
+We need to configure the tunnel to route traffic to Envoy Gateway. I'm choosing to terminate TLS at the gateway and need to ensure SNI works correctly for my wildcard certificate.
 
 ```yaml
-  config.yaml: |
-    tunnel: <my-tunnel>
-    credentials-file: <my-cred-file>
-    no-autoupdate: true
-    protocol: http2
-    metrics: 0.0.0.0:2000
-    ingress:
-      - hostname: blog.kyledev.co
-        service: https://homelab-gateway.envoy-gateway-system.svc.cluster.local:443
-        originRequest:
-          originServerName: blog.kyledev.co
-      - service: http_status:404
+tunnel: <my-tunnel>
+credentials-file: <my-cred-file>
+no-autoupdate: true
+protocol: http2
+metrics: 0.0.0.0:2000
+ingress:
+    - hostname: blog.kyledev.co
+    service: https://homelab-gateway.envoy-gateway-system.svc.cluster.local:443
+    originRequest:
+        originServerName: blog.kyledev.co
+    - service: http_status:404
 ```
 
-### CrowdSec Decisions
+### CrowdSec
 
-The [Local API](https://docs.crowdsec.net/docs/local_api/intro/) exposes endpoints for streaming live decision updates to remediation components. The decisions are tied to IP addresses, and instruct remediation components on what action to take (captcha, ban, etc) if the IP of an incoming request is tied to a decision.
+The CrowdSec [Local API](https://docs.crowdsec.net/docs/local_api/intro/) exposes endpoints for streaming live decision updates to remediation components. Decisions are tied to IP addresses and instruct remediation components on what action to take (captcha, ban, etc.) when an incoming request matches a decision.
 
-The Envoy Proxy bouncer consumes from this stream on startup so it can apply decisions immediately.
+The Envoy Proxy remediation component consumes from this stream on startup, caching all existing decisions locally so they can be applied immediately to incoming requests without additional API calls.
 
 ### Envoy Gateway
 
-This last piece acts as the ingress for all services in my cluster, including internal and exposed applications. Envoy gateway implements the Kubernetes gateway API, and communication to my Blog pod is made over HTTP, so we use a `HTTPRoute`.
+Envoy Gateway acts as the ingress for all services in my cluster, including both internal and internet-exposed applications. Envoy Gateway implements the Kubernetes Gateway API, and since communication to my blog Pod is made over HTTP, we use an `HTTPRoute`.
 
-The HTTPRoute for my blog looks like:
+The `HTTPRoute` defines how traffic for specific hostnames gets routed to backend services. Here's the configuration for my blog:
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   labels:
-    app: blog-prod
-  name: blog-prod
+    app: blog
+  name: blog
   namespace: blog
 spec:
   hostnames:
@@ -65,11 +74,13 @@ spec:
     namespace: envoy-gateway-system
   rules:
   - backendRefs:
-    - name: blog-prod
+    - name: blog
       port: 80
 ```
 
-Next, a `ReferenceGrant` is needed to allow us to apply a `SecurityPolicy` across namespaces to the CrowdSec bouncer:
+To enable CrowdSec protection, we need to apply a `SecurityPolicy` to this route. However, the bouncer runs in a different namespace (`envoy-gateway-system`) than the blog (`blog` namespace).
+
+The Gateway API security model requires explicit permission for cross-namespace references. A `ReferenceGrant` provides this permission, allowing the `SecurityPolicy` in the `blog` namespace to reference the bouncer service in `envoy-gateway-system`:
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: ReferenceGrant
@@ -86,14 +97,14 @@ spec:
       name: homelab-envoy-proxy-bouncer
 ```
 
-Then, we can apply a `SecurityPolicy` to the `HTTPRoute` for Ext Authz to send requests to the CrowdSec bouncer:
+With the `ReferenceGrant` in place, we can now apply a `SecurityPolicy` to the `HTTPRoute`. This policy configures Envoy Gateway's external authorization feature to validate each request with the CrowdSec bouncer via gRPC before forwarding traffic to the blog:
 ```yaml
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
   labels:
-    app: blog-prod
-  name: blog-prod
+    app: blog
+  name: blog
   namespace: blog
 spec:
   extAuth:
@@ -107,21 +118,27 @@ spec:
   targetRefs:
   - group: gateway.networking.k8s.io
     kind: HTTPRoute
-    name: blog-prod
+    name: blog
 ```
 
-It is convenient to apply the `SecurityPolicy` on a per route basis because I can choose which routes are protected, such as the public internet exposed routes, while keeping routes that can only be accessed on my LAN policy free.
+Applying the `SecurityPolicy` on a per-route basis is convenient because I can choose which routes are protected, such as internet-exposed routes, while keeping LAN-only routes policy-free.
 
-## Putting the Pieces Together
+## How It All Works Together
 
-When an IP address makes a request to my blog, and there are no active decisions for that address, the flow looks something like the following:
-![happy](/images/protecting-internet-facing-apps/happy.png)
+Now that we've covered each component individually, let's see how they work together to protect applications from malicious traffic.
 
-In the case that a malicious IP makes a request to the blog, and a decision is cached, the request never makes it to the blog `Pod`
-![ban](/images/protecting-internet-facing-apps/ban.png)
+When an IP address makes a request to my blog and there are no active decisions for that address, the flow looks like this:
+[![happy](/images/protecting-internet-facing-apps/happy.png)](/images/protecting-internet-facing-apps/happy.png)
 
-This flow allows exploits to be virtually patched without modifying the application code. I find this setup particularly useful for self-hosting because it can take time for applications to release new versions with security fixes.
+When a malicious IP makes a request to the blog and cached decision on the bouncer matches the IP, the request never makes it to the blog:
+[![ban](/images/protecting-internet-facing-apps/ban.png)](/images/protecting-internet-facing-apps/ban.png)
 
-In other cases, patching will be automatic as CrowdSec updates to collections you have installed.
+This flow enables virtual patching of exploits without modifying application code. This is particularly useful for self-hosting, where open source applications may take time to release security fixes (assuming they're even aware of the vulnerability).
 
-In other cases, patches can be applied via [blocklists](https://app.crowdsec.net/blocklists/6666d5c9a5ded82be1bec1e0) in CrowdSec to block IPs that are exploiting a specific CVE.
+In some cases, patching happens automatically as CrowdSec updates the collections installed on your instance.
+
+In other cases, patches can be applied manually via CrowdSec [blocklists](https://app.crowdsec.net/blocklists/6666d5c9a5ded82be1bec1e0) to block IPs exploiting specific CVEs.
+
+## Conclusion
+
+If you're interested in implementing this solution, check out the [envoy-proxy-crowdsec-bouncer repository](https://github.com/kdwils/envoy-proxy-crowdsec-bouncer) on GitHub.
