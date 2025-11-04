@@ -40,11 +40,11 @@ no-autoupdate: true
 protocol: http2
 metrics: 0.0.0.0:2000
 ingress:
-    - hostname: blog.kyledev.co
+  - hostname: blog.kyledev.co
     service: https://homelab-gateway.envoy-gateway-system.svc.cluster.local:443
     originRequest:
         originServerName: blog.kyledev.co
-    - service: http_status:404
+  - service: http_status:404
 ```
 
 ### CrowdSec
