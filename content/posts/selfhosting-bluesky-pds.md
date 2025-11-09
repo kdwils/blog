@@ -75,10 +75,18 @@ spec:
         app.kubernetes.io/name: bluesky
     spec:
       serviceAccountName: bluesky # optional
-      securityContext: {}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 2000
       containers:
         - name: bluesky
-          securityContext: {}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           image: bluesky
           imagePullPolicy: IfNotPresent
           env:
@@ -113,16 +121,10 @@ spec:
               value: "/pds"
             - name: PDS_BLOBSTORE_DISK_LOCATION
               value: "/pds/blocks"
-            - name: PDS_DID_PLC_URL
-              value: "https://plc.directory"
             - name: PDS_BSKY_APP_VIEW_URL
               value: "https://api.bsky.app"
             - name: PDS_BSKY_APP_VIEW_DID
               value: "did:web:api.bsky.app"
-            - name: PDS_REPORT_SERVICE_URL
-              value: "https://mod.bsky.app"
-            - name: PDS_REPORT_SERVICE_DID
-              value: "did:plc:ar7c4by46qjdydhdevvrndac"
             - name: PDS_CRAWLERS
               value: "https://bsky.network"
             - name: LOG_ENABLED
@@ -167,16 +169,10 @@ Defaults provided in the [installion script](https://github.com/bluesky-social/p
   value: "/pds"
 - name: PDS_BLOBSTORE_DISK_LOCATION
   value: "/pds/blocks"
-- name: PDS_DID_PLC_URL
-  value: "https://plc.directory"
 - name: PDS_BSKY_APP_VIEW_URL
   value: "https://api.bsky.app"
 - name: PDS_BSKY_APP_VIEW_DID
   value: "did:web:api.bsky.app"
-- name: PDS_REPORT_SERVICE_URL
-  value: "https://mod.bsky.app"
-- name: PDS_REPORT_SERVICE_DID
-  value: "did:plc:ar7c4by46qjdydhdevvrndac"
 - name: PDS_CRAWLERS
   value: "https://bsky.network"
 ```
