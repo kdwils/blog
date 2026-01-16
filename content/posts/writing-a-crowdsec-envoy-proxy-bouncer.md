@@ -71,7 +71,7 @@ Some metrics from the envoy bouncer deployed in my cluster. Metrics are updated 
 ├────────┼──────────┼───────────┼────────┤
 │  Total │       22 │     8.08k │    480 │
 ╰────────┴──────────┴───────────┴────────╯
-````
+```
 
 # What is crowdsec, and what does a bouncer do?
 

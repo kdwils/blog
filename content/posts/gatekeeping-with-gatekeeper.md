@@ -96,7 +96,7 @@ spec:
 {{< /details >}}
 
 ### Syncs
-Its not always as simple as enforcing policy that requires a deploy to have at least 2 replicas in a static manifest.
+It's not always as simple as enforcing policy that requires a deploy to have at least 2 replicas in a static manifest.
 
 In the case of wanting to enforce unique hostnames in Ingress resources, we need to also look at other Ingress resources in the kubernetes cluster. This is where [sync configurations](https://open-policy-agent.github.io/gatekeeper/website/docs/sync/) are needed.
 
@@ -130,7 +130,7 @@ spec:
 
 ### Constraints
 
-Constraints tell Gatekeeper what resources to enforce policy against. Kubernetes resources that match the constraint definition are subjecto to policy enforcement.
+Constraints tell Gatekeeper what resources to enforce policy against. Kubernetes resources that match the constraint definition are subject to policy enforcement.
 
 For our unique ingress example, our constraint looks like this:
 

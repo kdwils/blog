@@ -2,8 +2,8 @@
 author = "Kyle Wilson"
 title = "Goodbye beloved ingress-nginx controller"
 date = "2025-05-18"
-description = "How I swapped to envoy gateway from ingress-nginx controller with the new Kuberenetes Gateway API"
-summary = "How I swapped to envoy gateway from ingress-nginx controller with the new Kuberenetes Gateway API"
+description = "How I swapped to envoy gateway from ingress-nginx controller with the new Kubernetes Gateway API"
+summary = "How I swapped to envoy gateway from ingress-nginx controller with the new Kubernetes Gateway API"
 tags = [
     "Kubernetes",
     "Tailscale",
@@ -18,13 +18,13 @@ tags = [
 
 I've been using ingress-nginx for years now, and while I haven't had any complaints, it is soon to be replaced by [ingate](https://github.com/kubernetes-sigs/ingate). I'll probably give that a try when it's released, but until then I needed an alternative gateway controller.
 
-Envoy Gateway is in the process of being adopted at my workplace, so I wanted to get familiar with it and have an environemnt for testing as well.
+Envoy Gateway is in the process of being adopted at my workplace, so I wanted to get familiar with it and have an environment for testing as well.
 
 Better now than later to cutover to the new kubernetes gateway API I suppose.
 
 ## Creating a gateway
 
-The documentation for installing envoy gateway is pretty starghtforward. The documentation is [here](https://gateway.envoyproxy.io/docs/tasks/quickstart/). You don't need install the gateway API CRDs separately, they are shipped with the manifest in the documentation.
+The documentation for installing envoy gateway is pretty straightforward. The documentation is [here](https://gateway.envoyproxy.io/docs/tasks/quickstart/). You don't need install the gateway API CRDs separately, they are shipped with the manifest in the documentation.
 
 Assuming you have a working gateway controller deployed, we need to create a gateway class and gateway.
 
@@ -112,7 +112,7 @@ homelab-gateway   LoadBalancer   10.43.216.210   100.79.90.18,homelab-gateway.ta
 
 In my cluster, I have the following setup:
 
-A `*.kyledev.co` wildcard that is exposed to the public internet, and is served by a cloudflared tunnel to my cluster. I also have a VPS running plex that is publicy accessible.
+A `*.kyledev.co` wildcard that is exposed to the public internet, and is served by a cloudflared tunnel to my cluster. I also have a VPS running plex that is publicly accessible.
 
 And as mentioned previously, `*.int.kyledev.co`, which resolves by running pihole on a machine that is connected to my tailnet.
 

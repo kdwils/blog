@@ -27,7 +27,7 @@ The logic in the remediation component is straightforward: parse the real IP of 
 
 ### Cloudflared Tunnel
 
-Cloudflared Tunnel acts as a safe ingress for services in my Kubernetes cluster. I won't go over the details of setting up Cloudflared in this post as I've already covered it in a [previous post](/posts/cloudflare-tunnel). My setup has changed since then, but the core concept remains the same.
+Cloudflared Tunnel acts as a safe ingress for services in my Kubernetes cluster. I won't go over the details of setting up Cloudflared in this post as I've already covered it in a [previous post](/posts/cloudflared-tunnel). My setup has changed since then, but the core concept remains the same.
 
 The tunnel allows me to keep my IP private since users only see a Cloudflare IP. I also don't have to configure port forwarding on my router.
 

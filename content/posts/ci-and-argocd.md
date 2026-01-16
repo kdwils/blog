@@ -18,7 +18,7 @@ At work, we follow the practice of a separate code repo and deployment repo for 
 
 Given that I was already hosting my code on github, the obvious solution for `CI` was github actions. I knew that I wanted to create a reusable action so that I wouldn't have to copy paste the entire flow for each new service I created. Lastly, integrating with other open source build tools, such as `docker buildx` for multi-arch image support or `cosign` for signing, seemed to be simple as well.
 
-Originally for `CD`, I created flows for updating a deploy repo with a new image tag, but I was never truly satisfied with it as a solution. Additionally, I chose to build the kubernetes manfiest using `kustomize` and run a `kubectl apply` afterwards to apply the new changes in my flows. `ArgoCD` eliminated all of these steps and I could self host it as well in my `k3s` cluster. Seemed like a win-win for me. 
+Originally for `CD`, I created flows for updating a deploy repo with a new image tag, but I was never truly satisfied with it as a solution. Additionally, I chose to build the kubernetes manifest using `kustomize` and run a `kubectl apply` afterwards to apply the new changes in my flows. `ArgoCD` eliminated all of these steps and I could self host it as well in my `k3s` cluster. Seemed like a win-win for me. 
 
 ## Github Actions
 
@@ -198,7 +198,7 @@ For my needs, this setup works nicely as it is extremely simple to add new apps.
 
 ### ArgoCD-image-updater
 
-Unfortunately, ArogCD wont pull image changes if you are using an image tag such as `main` or `latest` (which I am). ArgoCD-image-updater will handle pulling the latest image for your application if you configure it correctly.
+Unfortunately, ArgoCD wont pull image changes if you are using an image tag such as `main` or `latest` (which I am). ArgoCD-image-updater will handle pulling the latest image for your application if you configure it correctly.
 
 This did feel like a bit of a pain to set up initially. You can see my configurations [here](https://github.com/kdwils/homelab/tree/main/argocd-image-updater) for the image-updater installation. Side note, if you're using `ghcr.io` as your registry, you need to use a personal access token as your password.
 

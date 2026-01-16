@@ -23,7 +23,7 @@ This guide assumes the following...
 
 Sharing a Plex server with friends and family presents unique challenges. While sharing via Tailscale works for tech-savvy users, it becomes cumbersome when dealing with smart TVs or my not so technical parents.
 
-I had previously used Cloudflare tunnels to expose services like [mealie](https://github.com/mealie-recipes/mealie), [bluesky personal data server](/content/posts/selfhosting-bluesky-pds.md), and even this [blog](https://github.com/kdwils/homelab/blob/main/infra/cloudflared/configmap.yaml#L13-L14). However, potential TOS concerns with Plex led me to seek alternatives.
+I had previously used Cloudflare tunnels to expose services like [mealie](https://github.com/mealie-recipes/mealie), [bluesky personal data server](/posts/selfhosting-bluesky-pds), and even this [blog](https://github.com/kdwils/homelab/blob/main/infra/cloudflared/configmap.yaml#L13-L14). However, potential TOS concerns with Plex led me to seek alternatives.
 
 Rather than port forwarding at home, I opted for a VPS solution with a public IP address that could communicate with my tailnet machines.
 
@@ -42,7 +42,7 @@ I quickly found out that with a free tier account you are going to have a hard t
 
 For oracle cloud, to keep within the free tier limits, I used the `VM.Standard.A1.Flex` shape, and the resources were 1 OCPU x 6GB Memory.
 
-After 26 days, I still haven't actually spend any money with this set up.
+After 26 days, I still haven't actually spent any money with this set up.
 
 ![no-cost](/images/exposing-plex/no-cost.png)
 
@@ -86,9 +86,9 @@ spec:
       protocol: TCP
       targetPort: https
   selector:
-    app.Kubernetes.io/component: controller
-    app.Kubernetes.io/instance: ingress-nginx
-    app.Kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
   type: LoadBalancer # load balancer type required
 ```
 
@@ -229,7 +229,7 @@ Let's break it down:
 - The ingress-controller hostname is `ingress-nginx` in tailscale using MagicDNS
 - The Kubernetes service for `ingress-nginx` is listening on port 80
 - `plex.my-domain.com` will be the set as the `X-Forwarded-Host` that ingress-nginx will consume
-- An ingress resource exists with a host `plex.my-domain.com` that forwards trafic to the plex service
+- An ingress resource exists with a host `plex.my-domain.com` that forwards traffic to the plex service
 
 Once the Caddyfile changes were made, I was able to reach my plex instance at `plex.my-domain.com`
 
