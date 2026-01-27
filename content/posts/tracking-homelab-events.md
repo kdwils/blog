@@ -254,16 +254,15 @@ ORDER BY requests DESC
 (22 rows)
 ```
 
-
 ## What's Next
 A simple dashboard would go a long way for viewing metrics
 
-[duckui.com](https://duckui.com/) exists, and seems like the most complete option available. This could live as a sidecar deployed alongside my service.
+[duckui.com](https://duckui.com/) exists, and seems like the most complete option available. It doesn't seem there is a way to remotely connect directly to a database file as an import, however. This might work by running the ui as a sidecar to this service, though I'm not sure how locks on the database file will behave.
 
-An [extension](https://duckdb.org/docs/stable/core_extensions/ui) exists, but seems to be tailored for local use
+An [extension](https://duckdb.org/docs/stable/core_extensions/ui) exists, and it seems you can connect by importing a DB file remotely.
 
-There is [support](https://duckdb.org/docs/stable/guides/network_cloud_storage/duckdb_over_https_or_s3) for connecting remotely to a database that is exposed
+There is [support](https://duckdb.org/docs/stable/guides/network_cloud_storage/duckdb_over_https_or_s3) for connecting remotely to a database that is exposed.
 
-The events service could also support a dashboard for simple read operations, but I would rather not reinvent the wheel here. As of the writing of this post, I am leaning towards a solution with `duckui.com`
+The events service could also support a dashboard for simple read operations, but I would rather not reinvent the wheel.
 
 Overall, DuckDB was a fantastic choice for a self-hosted option for storing simple events and metrics. I'm looking forward to adding more events in the future.
