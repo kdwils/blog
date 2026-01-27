@@ -5,12 +5,11 @@ date = "2025-05-30"
 description = "Building a CrowdSec Bouncer for Envoy Proxy to protect Kubernetes services in my homelab."
 summary = "A detailed walkthrough of implementing a CrowdSec bouncer for Envoy proxy, including code examples and deployment configuration. A tale of gRPC and Go."
 tags = [
-    "kubernetes",
-    "crowdsec",
+    "Kubernetes",
+    "CrowdSec",
     "envoy-gateway",
     "homelab",
-    "golang",
-    "go"
+    "Go"
 ]
 +++
 

@@ -6,7 +6,7 @@ description = "The creation of a k3s Kubernetes cluster consisting of raspberry 
 summary = "The creation of a k3s Kubernetes cluster consisting of raspberry pis."
 tags = [
     "k3s",
-    "raspberry pi"
+    "Raspberry Pi"
 ]
 +++
 

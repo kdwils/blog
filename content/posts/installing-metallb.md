@@ -5,10 +5,10 @@ date = "2023-02-15"
 description = "Metallb"
 summary = "Metallb in k3s RPIs kubernetes cluster. Testing the metallb installation by deploying pihole. Using pihole ad blocking for the entire tailnet."
 tags = [
-    "metallb",
+    "MetalLB",
     "k3s",
-    "tailscale",
-    "pihole",
+    "Tailscale",
+    "Pi-hole",
     "bare-metal"
 ]
 +++

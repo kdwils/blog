@@ -6,7 +6,7 @@ description = "A high-level overview of protecting Kubernetes services using Cro
 summary = "Learn how to protect internet-facing Kubernetes applications by combining CrowdSec's threat intelligence with Envoy Gateway's external authorization. This setup enables automatic blocking of malicious IPs and virtual patching of vulnerabilities without modifying application code."
 tags = [
     "homelab",
-    "crowdsec",
+    "CrowdSec",
     "envoy-gateway"
 ]
 +++

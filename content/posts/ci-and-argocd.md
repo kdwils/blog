@@ -5,8 +5,8 @@ date = "2023-04-25"
 description = "Check out how I created a reusable github action for building, pushing, and signing docker images. ArgoCD then syncs changes to my homelab."
 summary = "Check out how I created a reusable github action for building, pushing, and signing docker images. ArgoCD then syncs changes to my homelab."
 tags = [
-    "github actions",
-    "argocd",
+    "GitHub Actions",
+    "ArgoCD",
     "CI",
     "CD"
 ]

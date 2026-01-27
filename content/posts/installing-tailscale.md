@@ -5,7 +5,7 @@ date = "2023-02-15"
 description = "Tailscale on RPIs"
 summary = "Installing tailscale on my machines to make them accessible from anywhere in the world."
 tags = [
-    "tailscale"
+    "Tailscale"
 ]
 +++
 

@@ -6,7 +6,7 @@ description = "Cloudflare Turnstile, reCAPTCHA support, custom HTML templates, J
 summary = "A deep dive into the latest Envoy Proxy Bouncer release featuring CAPTCHA support, signed JWT sessions, custom templates, and dashboard metrics"
 tags = [
     "envoy-proxy",
-    "crowdsec",
+    "CrowdSec",
     "bouncer"
 ]
 +++
