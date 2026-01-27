@@ -5,10 +5,10 @@ date = "2024-11-18"
 description = "self hosting the bluesky official PDS server on kubernetes and configuring a custom handle"
 summary = "self hosting the bluesky official PDS server on kubernetes and configuring a custom handle"
 tags = [
-    "bluesky",
-    "self host",
-    "kubernetes",
-    "cloudflare"
+    "Bluesky",
+    "self-host",
+    "Kubernetes",
+    "Cloudflare"
 ]
 +++
 

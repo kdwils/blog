@@ -7,9 +7,8 @@ summary = "How I swapped to envoy gateway from ingress-nginx controller with the
 tags = [
     "Kubernetes",
     "Tailscale",
-    "Envoy Gateway",
+    "envoy-gateway",
     "ingress-nginx",
-    "envoy gateway",
     "cert-manager"
 ]
 +++

@@ -5,8 +5,7 @@ date = "2026-01-26"
 description = "How I started tracking events in my cluster backed by DuckDB"
 summary = "I created a simple CRUD go application to feed events into DuckDB for my homelab"
 tags = [
-    "Self Host",
-    "Kubernetes",
+    "self-host",
     "DuckDB"
 ]
 +++
