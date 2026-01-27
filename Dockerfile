@@ -1,6 +1,6 @@
 FROM alpine:latest AS builder
 
-ARG HUGO_VERSION=0.151.0
+ARG HUGO_VERSION=0.154.0
 ARG TARGETARCH
 
 RUN apk add --no-cache ca-certificates && \
@@ -15,7 +15,7 @@ COPY . .
 ENV HUGO_ENV=production
 RUN hugo --minify
 
-FROM nginx:1.29.1-alpine-slim
+FROM nginx:1.29.4-alpine-slim
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /src/public /usr/share/nginx/html
