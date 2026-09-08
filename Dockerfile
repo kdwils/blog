@@ -1,6 +1,6 @@
 FROM alpine:latest AS builder
 
-ARG HUGO_VERSION=0.154.0
+ARG HUGO_VERSION=0.165.0
 ARG TARGETARCH
 
 RUN apk add --no-cache ca-certificates && \
@@ -15,11 +15,14 @@ COPY . .
 ENV HUGO_ENV=production
 RUN hugo --minify
 
-FROM nginx:1.29.4-alpine-slim
+FROM caddy:2-alpine AS caddy
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /src/public /usr/share/nginx/html
+FROM gcr.io/distroless/static-debian12
+
+COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=builder /src/public /usr/share/caddy
 
 EXPOSE 8080
 
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["/usr/bin/caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
