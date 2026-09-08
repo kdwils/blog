@@ -17,7 +17,9 @@ RUN hugo --minify
 
 FROM caddy:2-alpine AS caddy
 
-FROM gcr.io/distroless/static-debian12
+RUN apk add --no-cache libcap && setcap -r /usr/bin/caddy
+
+FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
 COPY Caddyfile /etc/caddy/Caddyfile
